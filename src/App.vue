@@ -10,7 +10,7 @@ async function getInstruments() {
 }
 
 onMounted(() => {
-   getInstruments()
+  getInstruments()
 })
 </script>
 
