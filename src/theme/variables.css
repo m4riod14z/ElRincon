@@ -1,18 +1,2 @@
-:root {
-  /* Primario (botón principal) */
-  --ion-color-primary: #e11d48;        /* rojo */
-  --ion-color-primary-rgb: 225,29,72;
-  --ion-color-primary-contrast: #ffffff;
-  --ion-color-primary-contrast-rgb: 255,255,255;
-  --ion-color-primary-shade: #c8103b;
-  --ion-color-primary-tint: #e73a61;
-
-  /* Secundarios/terciarios */
-  --ion-color-secondary: #f59e0b;      /* ámbar */
-  --ion-color-tertiary: #10b981;       /* verde */
-
-  /* Neutros */
-  --ion-color-medium: #64748b;         /* slate-500 */
-  --ion-color-light: #f8fafc;          /* slate-50 */
-  --ion-color-dark: #0f172a;           /* slate-900 */
-}
+/* For information on how to create your own theme, please see:
+http://ionicframework.com/docs/theming/ */
