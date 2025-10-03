@@ -12,7 +12,7 @@
         <IonContent class="ion-padding" fullscreen>
             <h1 class="title">Ingresa a tu cuenta</h1>
 
-            <!-- Aviso temporal (amarillo, no toast) -->
+            <!-- Aviso temporal -->
             <div v-if="authAlertVisible" class="inline-alert">
                 {{ authAlert }}
             </div>
@@ -40,7 +40,7 @@
             </IonItem>
             <IonText v-if="passwordError" color="danger" class="hint">{{ passwordError }}</IonText>
 
-            <!-- Continuar (rojo) -->
+            <!-- Continuar -->
             <IonButton expand="block" color="danger" :disabled="!formOk || loading" @click="onSubmit"
                 class="submit-btn">
                 {{ loading ? 'Ingresando…' : 'Continuar' }}
@@ -59,6 +59,7 @@ import { ref, computed, watch } from 'vue';
 // import { useRouter } from 'vue-router';
 import { isEmail, isNotEmpty } from '@/utils/validatorsLogin';
 import { loginWithEmail } from '@/controllers/AuthEmailController';
+import { getCurrentUserRole } from '@/controllers/ProfileController';
 
 // const router = useRouter();
 
@@ -119,7 +120,17 @@ async function onSubmit() {
     loading.value = true;
     try {
         await loginWithEmail(email.value, password.value);
-        // router.replace('/tabs/tab1'); --> ACTUALIZAR CUANDO SE CREE LA PRIMERA PANTALLA
+
+        const role = await getCurrentUserRole();
+
+        if (role === 'cliente') {
+            //router.replace('/tabs/tab1'); --> redirigir a la vista del cliente
+        } else if (role === 'cocina') {
+            //router.replace('/cocina'); --> redirigir a la vista de la cocina
+        } else {
+            showAuthAlert('No se encontró rol de usuario');
+        }
+
     } catch {
         showAuthAlert('Correo o contraseña incorrectos');
         touchedPassword.value = true;
