@@ -1,43 +1,47 @@
+// src/main.ts
 import { createApp } from 'vue'
-import App from './App.vue';
-import router from './router';
+import App from './App.vue'
+import router from './router'
+import { IonicVue } from '@ionic/vue'
+import { supabase } from '@/services/SupabaseClient'
 
-import { IonicVue } from '@ionic/vue';
+import '@ionic/vue/css/core.css'
+import '@ionic/vue/css/normalize.css'
+import '@ionic/vue/css/structure.css'
+import '@ionic/vue/css/typography.css'
+import '@ionic/vue/css/padding.css'
+import '@ionic/vue/css/float-elements.css'
+import '@ionic/vue/css/text-alignment.css'
+import '@ionic/vue/css/text-transformation.css'
+import '@ionic/vue/css/flex-utils.css'
+import '@ionic/vue/css/display.css'
+import '@ionic/vue/css/palettes/dark.system.css'
+import './theme/variables.css'
 
-/* Core CSS required for Ionic components to work properly */
-import '@ionic/vue/css/core.css';
+const app = createApp(App).use(IonicVue).use(router)
 
-/* Basic CSS for apps built with Ionic */
-import '@ionic/vue/css/normalize.css';
-import '@ionic/vue/css/structure.css';
-import '@ionic/vue/css/typography.css';
+// Helper para no duplicar navegación
+const go = (path: string) => {
+  if (router.currentRoute.value.path !== path) router.replace(path)
+}
 
-/* Optional CSS utils that can be commented out */
-import '@ionic/vue/css/padding.css';
-import '@ionic/vue/css/float-elements.css';
-import '@ionic/vue/css/text-alignment.css';
-import '@ionic/vue/css/text-transformation.css';
-import '@ionic/vue/css/flex-utils.css';
-import '@ionic/vue/css/display.css';
+// 🔑 Listener con “otp_pending” para ignorar el SIGNED_IN del signUp
+supabase.auth.onAuthStateChange(async (event, session) => {
+  const otpPending = localStorage.getItem('otp_pending') === '1'
 
-/**
- * Ionic Dark Mode
- * -----------------------------------------------------
- * For more info, please see:
- * https://ionicframework.com/docs/theming/dark-mode
- */
+  if (event === 'SIGNED_IN' && session) {
+    // Si estamos en flujo de registro con OTP pendiente, NO redirigir aún
+    if (otpPending) return
+    // Si no hay OTP pendiente, lleva al menú
+    return go('/tabs/tab1')
+  }
 
-/* @import '@ionic/vue/css/palettes/dark.always.css'; */
-/* @import '@ionic/vue/css/palettes/dark.class.css'; */
-import '@ionic/vue/css/palettes/dark.system.css';
+  if (event === 'SIGNED_OUT') {
+    // Si no hay sesión y alguien intenta ir a tabs, devuélvelo
+    if (router.currentRoute.value.path.startsWith('/tabs')) {
+      return go('/home')
+    }
+  }
+})
 
-/* Theme variables */
-import './theme/variables.css';
-
-const app = createApp(App)
-  .use(IonicVue)
-  .use(router);
-
-router.isReady().then(() => {
-  app.mount('#app');
-});
+router.isReady().then(() => app.mount('#app'))
