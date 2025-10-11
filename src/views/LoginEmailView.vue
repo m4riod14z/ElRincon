@@ -18,24 +18,24 @@
             </div>
 
             <!-- Email -->
-            <IonItem lines="none" class="field">
-                <IonLabel position="stacked">Correo electrónico</IonLabel>
-                <IonInput type="email" placeholder="tunombre@ejemplo.com" v-model="email" inputmode="email"
-                    autocomplete="email" @ionBlur="touchedEmail = true" :class="{ invalid: !!emailError }" />
+            <IonItem lines="none" class="field ion-no-padding">
+                <IonLabel position="stacked" class="stacked-label">Correo electrónico</IonLabel>
+                <div class="input-frame" :class="{ invalid: !!emailError }">
+                    <IonInput type="email" placeholder="tunombre@ejemplo.com" v-model="email" inputmode="email"
+                        autocomplete="email" @ionBlur="touchedEmail = true" />
+                </div>
             </IonItem>
             <IonText v-if="emailError" color="danger" class="hint">{{ emailError }}</IonText>
 
             <!-- Contraseña -->
-            <IonItem lines="none" class="field">
-                <IonLabel position="stacked">Contraseña</IonLabel>
-                <div class="password-wrapper">
+            <IonItem lines="none" class="field ion-no-padding">
+                <IonLabel position="stacked" class="stacked-label">Contraseña</IonLabel>
+                <div class="input-frame with-eye" :class="{ invalid: !!passwordError }">
                     <IonInput :type="showPassword ? 'text' : 'password'" placeholder="Ingresa tu contraseña"
-                        v-model="password" autocomplete="current-password" @ionBlur="touchedPassword = true"
-                        :class="{ invalid: !!passwordError }" />
-                    <IonButton fill="clear" size="small" class="eye-btn" @click="togglePassword"
-                        aria-label="Ver contraseña">
+                        v-model="password" autocomplete="current-password" @ionBlur="touchedPassword = true" />
+                    <button type="button" class="eye-plain" @click.stop="togglePassword" aria-label="Ver contraseña">
                         <IonIcon :icon="showPassword ? eyeOffOutline : eyeOutline" />
-                    </IonButton>
+                    </button>
                 </div>
             </IonItem>
             <IonText v-if="passwordError" color="danger" class="hint">{{ passwordError }}</IonText>
@@ -59,7 +59,6 @@ import { ref, computed, watch } from 'vue';
 // import { useRouter } from 'vue-router';
 import { isEmail, isNotEmpty } from '@/utils/validatorsLogin';
 import { loginWithEmail } from '@/controllers/AuthEmailController';
-import { getCurrentUserRole } from '@/controllers/ProfileController';
 
 // const router = useRouter();
 
@@ -120,17 +119,10 @@ async function onSubmit() {
     loading.value = true;
     try {
         await loginWithEmail(email.value, password.value);
-
-        const role = await getCurrentUserRole();
-
-        if (role === 'cliente') {
-            //router.replace('/tabs/tab1'); --> redirigir a la vista del cliente
-        } else if (role === 'cocina') {
-            //router.replace('/cocina'); --> redirigir a la vista de la cocina
-        } else {
-            showAuthAlert('No se encontró rol de usuario');
-        }
-
+        // const role = await getCurrentUserRole();
+        // if (role === 'client') router.replace('/tabs/tab1');
+        // else if (role === 'restaurant') router.replace('/cocina');
+        // else showAuthAlert('No se encontró rol de usuario');
     } catch {
         showAuthAlert('Correo o contraseña incorrectos');
         touchedPassword.value = true;
@@ -148,26 +140,84 @@ async function onSubmit() {
 }
 
 .field {
-    margin-bottom: 6px;
+    margin-bottom: 10px;
+    /* un poco más de aire */
+    /* Eliminamos paddings internos del IonItem para que no “crezca” hacia afuera */
+    --background: transparent;
+    --inner-padding-start: 0;
+    --inner-padding-end: 0;
+    --inner-padding-top: 0;
+    --inner-padding-bottom: 0;
+    --padding-start: 0;
+    --padding-end: 0;
 }
 
-.password-wrapper {
-    position: relative;
+/* Da espacio entre la etiqueta y el cuadro del input */
+.stacked-label {
+    display: block;
+    margin: 4px 0 6px;
+    font-weight: 600;
+}
+
+/* Marco propio para el input: 100% del ancho del IonItem, sin desbordar */
+.input-frame {
+    box-sizing: border-box;
     width: 100%;
-}
-
-.eye-btn {
-    position: absolute;
-    right: 4px;
-    top: 16px;
-    --padding-start: 6px;
-    --padding-end: 6px;
-}
-
-.invalid {
-    --highlight-color-focused: var(--ion-color-danger);
-    border: 1px solid var(--ion-color-danger);
+    min-height: 44px;
+    border: 1px solid var(--ion-color-medium);
     border-radius: 10px;
+    background: var(--ion-item-background, var(--ion-color-step-150, #1e1e1e));
+    padding: 6px 12px;
+    display: flex;
+    align-items: center;
+    /* Ensure absolutely-positioned eye aligns within this frame */
+    position: relative;
+}
+
+/* Variante con botón ojo: deja espacio a la derecha */
+.input-frame.with-eye {
+    padding-right: 40px;
+}
+
+/* Cuando hay error, el borde se vuelve rojo pero SIN tocar el label */
+.input-frame.invalid {
+    border-color: var(--ion-color-danger);
+}
+
+/* Asegura que el IonInput ocupe todo y no desborde */
+.input-frame ion-input {
+    width: 100%;
+    --padding-start: 0;
+    --padding-end: 0;
+}
+
+/* Botón del ojo: centrado y ligeramente más grande */
+.eye-plain {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 26px;
+    width: 26px;
+    line-height: 0;
+    z-index: 2;
+}
+
+/* Aumentamos suavemente el tamaño del ícono */
+.eye-plain ion-icon {
+    font-size: 1.4rem;
+    color: var(--ion-color-medium);
+}
+
+.eye-plain:hover ion-icon {
+    color: var(--ion-color-light);
 }
 
 .hint {
@@ -178,9 +228,7 @@ async function onSubmit() {
 /* Aviso amarillo temporal */
 .inline-alert {
     background: #fff3cd;
-    /* amarillo suave */
     color: #8a6d3b;
-    /* marrón */
     border: 1px solid #ffe6a7;
     border-radius: 8px;
     padding: 10px 12px;
