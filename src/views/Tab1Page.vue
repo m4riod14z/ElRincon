@@ -41,6 +41,16 @@
           <p class="detail-desc">{{ seleccionado.descripcion }}</p>
           <div class="detail-price">${{ seleccionado.precio.toLocaleString() }}</div>
 
+          <!-- Selecciones actuales y total -->
+          <div class="current">
+            <div>Adición: <strong>{{ additionLabel }}</strong></div>
+            <div>Bebida: <strong>{{ drinkLabel }}</strong></div>
+            <div class="row total">
+              <span>Total</span>
+              <span>${{ total.toLocaleString() }}</span>
+            </div>
+          </div>
+
           <div class="detail-actions">
             <ion-button expand="block" fill="outline" color="medium" @click="anadirAdicion">
               Añadir adición
@@ -54,6 +64,60 @@
             <ion-button expand="block" fill="clear" color="dark" @click="cerrarDetalle">Cerrar</ion-button>
           </div>
         </div>
+      </ion-content>
+    </ion-modal>
+
+    <!-- Modal: Adiciones (máx 1) -->
+    <ion-modal :is-open="showAddModal" @didDismiss="showAddModal = false">
+      <ion-header>
+        <ion-toolbar>
+          <ion-title>Selecciona una adición</ion-title>
+          <ion-buttons slot="end">
+            <ion-button fill="clear" @click="showAddModal = false">Cerrar</ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+      <ion-content class="ion-padding">
+        <ion-radio-group v-model="selectedAdditionId">
+          <ion-list>
+            <ion-item>
+              <ion-label>Ninguna</ion-label>
+              <ion-radio :value="null" justify="end"></ion-radio>
+            </ion-item>
+            <ion-item v-for="a in additions" :key="a.id">
+              <ion-label>{{ a.name }} — ${{ a.price.toLocaleString() }}</ion-label>
+              <ion-radio :value="a.id" justify="end"></ion-radio>
+            </ion-item>
+          </ion-list>
+        </ion-radio-group>
+        <ion-button expand="block" class="mt" @click="showAddModal = false">Aceptar</ion-button>
+      </ion-content>
+    </ion-modal>
+
+    <!-- Modal: Bebidas (máx 1) -->
+    <ion-modal :is-open="showDrinkModal" @didDismiss="showDrinkModal = false">
+      <ion-header>
+        <ion-toolbar>
+          <ion-title>Selecciona una bebida</ion-title>
+          <ion-buttons slot="end">
+            <ion-button fill="clear" @click="showDrinkModal = false">Cerrar</ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+      <ion-content class="ion-padding">
+        <ion-radio-group v-model="selectedDrinkId">
+          <ion-list>
+            <ion-item>
+              <ion-label>Ninguna</ion-label>
+              <ion-radio :value="null" justify="end"></ion-radio>
+            </ion-item>
+            <ion-item v-for="d in drinks" :key="d.id">
+              <ion-label>{{ d.name }} — ${{ d.price.toLocaleString() }}</ion-label>
+              <ion-radio :value="d.id" justify="end"></ion-radio>
+            </ion-item>
+          </ion-list>
+        </ion-radio-group>
+        <ion-button expand="block" class="mt" @click="showDrinkModal = false">Aceptar</ion-button>
       </ion-content>
     </ion-modal>
 
@@ -82,10 +146,13 @@
 import { ref, onMounted, computed } from 'vue'
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonButtons, IonIcon, IonSearchbar,
-  IonContent, IonFooter, IonSegment, IonSegmentButton, IonLabel, IonButton, IonModal
+  IonContent, IonFooter, IonSegment, IonSegmentButton, IonLabel, IonButton, IonModal,
+  IonList, IonItem, IonRadioGroup, IonRadio
 } from '@ionic/vue'
 import { cartOutline, restaurantOutline, receiptOutline, personOutline } from 'ionicons/icons'
 import { supabase } from '@/services/SupabaseClient'
+import { getAditions } from '@/controllers/AditionsController'
+import { getDrinks } from '@/controllers/DrinksController'
 
 // Orden deseado de categorías
 const ordenCategorias = ['Personales','Dobles','Para 3','Para 4','Para 7–8','Desgranados','Nachos']
@@ -98,21 +165,15 @@ const errorCarga = ref('')
 function normalizarCategoria(raw) {
   if (!raw) return ''
   let s = String(raw).trim()
-  // Unificar guiones 7-8 → 7–8
   s = s.replace('7-8', '7–8').replace('7 – 8', '7–8')
-  // Quitar espacios dobles
   s = s.replace(/\s+/g, ' ')
-  // Capitalización simple
-  s = s
-    .toLowerCase()
-    .replace(/(^|\s)\S/g, (t) => t.toUpperCase())
+  s = s.toLowerCase().replace(/(^|\s)\S/g, (t) => t.toUpperCase())
   return s
 }
 
 async function cargarCatalogo() {
   cargando.value = true
   errorCarga.value = ''
-  // 1) Leer productos de la tabla correcta (no hay category_id en products)
   const { data: prods, error: errProd } = await supabase
     .from('products')
     .select('id,name,description,price,image_url,available')
@@ -126,7 +187,7 @@ async function cargarCatalogo() {
     return
   }
 
-  // 2) Resolver categoría: via tabla pivote menu_items (product_id -> category_id) y tabla categories (id -> name)
+  // vínculos producto->categoría
   let productToCategoryName = new Map()
   {
     const [{ data: links }, { data: cats }] = await Promise.all([
@@ -178,13 +239,11 @@ const categorias = computed(() => {
     if (!grupos.has(cat)) grupos.set(cat, [])
     grupos.get(cat).push(p)
   }
-  // Construye en orden y descarta vacíos
   const lista = []
   for (const nombre of ordenCategorias) {
     const items = grupos.get(nombre) || []
     if (items.length) lista.push({ nombre, items })
   }
-  // También agregar categorías no contempladas
   for (const [nombre, items] of grupos) {
     if (!ordenCategorias.includes(nombre) && items.length) {
       lista.push({ nombre, items })
@@ -195,7 +254,6 @@ const categorias = computed(() => {
 
 const detalleAbierto = ref(false)
 const seleccionado = ref(null)
-
 function abrirDetalle(item) {
   seleccionado.value = item
   detalleAbierto.value = true
@@ -205,14 +263,59 @@ function cerrarDetalle() {
   seleccionado.value = null
 }
 
-function anadirAdicion() {
-  // TODO: Abrir flujo de adiciones
+/* ====== RF-06: Selección de adición y bebida (máximo 1) ====== */
+
+// Estado de modales
+const showAddModal = ref(false)
+const showDrinkModal = ref(false)
+
+// Listas cargadas desde Supabase
+const additions = ref([]) // [{id, name, price}]
+const drinks = ref([])    // [{id, name, price}]
+
+// Selección (solo 1)
+const selectedAdditionId = ref(null) // number | null
+const selectedDrinkId = ref(null)    // number | null
+
+// Helpers derivados
+const selectedAddition = computed(() => additions.value.find(a => a.id === selectedAdditionId.value) || null)
+const selectedDrink = computed(() => drinks.value.find(d => d.id === selectedDrinkId.value) || null)
+
+const additionLabel = computed(() =>
+  selectedAddition.value ? `${selectedAddition.value.name} ($${selectedAddition.value.price.toLocaleString()})` : 'Ninguna'
+)
+const drinkLabel = computed(() =>
+  selectedDrink.value ? `${selectedDrink.value.name} ($${selectedDrink.value.price.toLocaleString()})` : 'Ninguna'
+)
+
+const total = computed(() => {
+  const base = seleccionado.value?.precio || 0
+  const add = selectedAddition.value?.price || 0
+  const dri = selectedDrink.value?.price || 0
+  return base + add + dri
+})
+
+// Abrir modales y cargar datos si hace falta
+async function anadirAdicion() {
+  if (!additions.value.length) {
+    const { data, error } = await getAditions()
+    if (!error && data) additions.value = data
+  }
+  showAddModal.value = true
 }
-function anadirBebida() {
-  // TODO: Abrir flujo de bebidas
+async function anadirBebida() {
+  if (!drinks.value.length) {
+    const { data, error } = await getDrinks()
+    if (!error && data) drinks.value = data
+  }
+  showDrinkModal.value = true
 }
+
+/* ====== fin RF-06 ====== */
+
 function anadirAlCarrito() {
-  // TODO: Integrar con estado del carrito
+  // TODO: integrar con tu carrito real.
+  // Por ahora solo cierra el detalle.
   cerrarDetalle()
 }
 </script>
@@ -256,7 +359,13 @@ function anadirAlCarrito() {
 .detail-title { margin: 0; font-weight: 800; font-size: 22px; }
 .detail-desc { margin: 0; color: var(--ion-color-medium); }
 .detail-price { font-size: 20px; font-weight: 800; color: #d32f2f; }
+
+.current { display: grid; gap: 6px; }
+.row { display: flex; justify-content: space-between; padding: 6px 0; }
+.total { font-weight: 800; border-top: 1px solid #eee; margin-top: 6px; }
+
 .detail-actions { display: grid; gap: 8px; margin-top: 8px; }
 
+.mt { margin-top: 10px; }
 .err { color: var(--ion-color-danger); margin-bottom: 8px; }
 </style>
