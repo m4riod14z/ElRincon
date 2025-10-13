@@ -151,8 +151,8 @@ import {
 } from '@ionic/vue'
 import { cartOutline, restaurantOutline, receiptOutline, personOutline } from 'ionicons/icons'
 import { supabase } from '@/services/SupabaseClient'
-import { getAditions } from '@/controllers/AditionsController'
-import { getDrinks } from '@/controllers/DrinksController'
+import { getAditions } from '@/models/additions'
+import { getDrinks } from '@/models/drinks'
 
 // Orden deseado de categorías
 const ordenCategorias = ['Personales','Dobles','Para 3','Para 4','Para 7–8','Desgranados','Nachos']

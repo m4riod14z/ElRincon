@@ -1,12 +1,11 @@
-// src/controllers/DrinksController.ts
-import { supabase } from "@/services/SupabaseClient";
+import { fetchDrinks } from "@/models/drinks";
 
 export async function getDrinks() {
-    const { data, error } = await supabase
-        .from("drinks")
-        .select("*")
-        .eq("available", true)
-        .order("name", { ascending: true });
-
-    return { data, error };
+    try {
+        const data = await fetchDrinks();
+        return { data, error: null as any };
+    } catch (error: any) {
+        console.error("Error obteniendo bebidas:", error?.message || error);
+        return { data: null, error };
+    }
 }
