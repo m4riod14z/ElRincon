@@ -1,9 +1,9 @@
 import { ref, computed } from "vue";
-import { fetchAdditions } from "@/models/additions";
-import { fetchDrinks } from "@/models/drinks";
+import { getAdditions } from "@/controllers/AdditionsController";
+import { getDrinks } from "@/controllers/DrinksController";
 import type { OptionRow } from "@/models/types";
 
-export function useProductDetail(basePriceRef: { value: number }) {
+export function useProductDetail(basePrice: { value: number }) {
     const additions = ref<OptionRow[]>([]);
     const drinks = ref<OptionRow[]>([]);
     const selectedAdditionId = ref<number | null>(null);
@@ -15,20 +15,34 @@ export function useProductDetail(basePriceRef: { value: number }) {
     const selectedDrink = computed(() =>
         drinks.value.find(d => d.id === selectedDrinkId.value) || null
     );
+
     const total = computed(() =>
-        (basePriceRef.value || 0) + (selectedAddition.value?.price || 0) + (selectedDrink.value?.price || 0)
+        (basePrice.value || 0) +
+        (selectedAddition.value?.price || 0) +
+        (selectedDrink.value?.price || 0)
     );
 
-    async function loadAdditionsOnce() { if (!additions.value.length) additions.value = await fetchAdditions(); }
-    async function loadDrinksOnce() { if (!drinks.value.length) drinks.value = await fetchDrinks(); }
-    function clearAddition() { selectedAdditionId.value = null; }
-    function clearDrink() { selectedDrinkId.value = null; }
+    async function loadAdditionsOnce() {
+        if (additions.value.length) return;
+        const { data, error } = await getAdditions();
+        if (!error && data) additions.value = data;
+    }
+
+    async function loadDrinksOnce() {
+        if (drinks.value.length) return;
+        const { data, error } = await getDrinks();
+        if (!error && data) drinks.value = data;
+    }
+
+    function clearSelections() {
+        selectedAdditionId.value = null;
+        selectedDrinkId.value = null;
+    }
 
     return {
         additions, drinks,
         selectedAdditionId, selectedDrinkId,
         selectedAddition, selectedDrink, total,
-        loadAdditionsOnce, loadDrinksOnce,
-        clearAddition, clearDrink,
+        loadAdditionsOnce, loadDrinksOnce, clearSelections,
     };
 }

@@ -5,6 +5,7 @@ export interface Product {
     price: number;
     image_url?: string | null;
     available: boolean;
+    category?: string | null;
 }
 
 export interface Category {
