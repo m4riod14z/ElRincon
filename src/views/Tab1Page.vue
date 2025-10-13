@@ -41,18 +41,26 @@
 
       <ion-content class="ion-padding detail-content">
         <div class="detail-wrap" v-if="seleccionado">
-          <img class="detail-img" :src="seleccionado.image_url" :alt="seleccionado.name" />
+          <img class="detail-img" :src="seleccionado.image_url || '/Logo.png'" :alt="seleccionado.name || 'Producto'" />
           <h2 class="detail-title">{{ seleccionado.name }}</h2>
           <p class="detail-desc">{{ seleccionado.description }}</p>
-          <div class="detail-price">{{ fmtCOP(seleccionado.price) }}</div>
 
+          <!-- === OPCIÓN B: Base + Total === -->
+          <div class="price-block">
+            <div class="base">
+              <span>Precio base</span>
+              <strong>{{ fmtCOP(seleccionado.price) }}</strong>
+            </div>
+            <div class="total-line">
+              <span>Total</span>
+              <strong class="total-amount">{{ fmtCOP(total) }}</strong>
+            </div>
+          </div>
+
+          <!-- Selecciones actuales -->
           <div class="current">
             <div>Adición: <strong>{{ additionLabel }}</strong></div>
             <div>Bebida: <strong>{{ drinkLabel }}</strong></div>
-            <div class="row total">
-              <span>Total</span>
-              <span>{{ fmtCOP(total) }}</span>
-            </div>
           </div>
         </div>
       </ion-content>
@@ -188,7 +196,7 @@ const drinkActions = computed(() => {
 });
 
 function anadirAlCarrito() {
-  //Falta implementar carrito
+  // TODO: Integrar con carrito real
   cerrarDetalle();
 }
 </script>
@@ -250,7 +258,6 @@ function anadirAlCarrito() {
   margin: 0;
 }
 
-/* ====== DETALLE ====== */
 .detail-content {
   --background: #fff;
 }
@@ -280,27 +287,34 @@ function anadirAlCarrito() {
   color: var(--ion-color-medium);
 }
 
-.detail-price {
+.price-block {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0;
+}
+
+.price-block .base {
+  color: var(--ion-color-medium);
+  display: flex;
+  justify-content: space-between;
+}
+
+.price-block .total-line {
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid #eee;
+  padding-top: 6px;
+}
+
+.total-amount {
+  color: #d32f2f;
   font-size: 20px;
   font-weight: 800;
-  color: #d32f2f;
 }
 
 .current {
   display: grid;
   gap: 6px;
-}
-
-.row {
-  display: flex;
-  justify-content: space-between;
-  padding: 6px 0;
-}
-
-.total {
-  font-weight: 800;
-  border-top: 1px solid #eee;
-  margin-top: 6px;
 }
 
 .detail-actions {
