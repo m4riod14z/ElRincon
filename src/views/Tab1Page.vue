@@ -12,7 +12,12 @@
       </ion-toolbar>
 
       <ion-toolbar>
-        <ion-searchbar placeholder="Buscar en El Rincón" />
+        <!-- 🔎 ahora sí filtra -->
+        <ion-searchbar
+          placeholder="Buscar en El Rincón"
+          v-model="searchQuery"
+          @ionInput="onSearch"
+        />
       </ion-toolbar>
     </ion-header>
 
@@ -20,17 +25,33 @@
       <div v-if="error" class="err">{{ error }}</div>
 
       <div v-else class="menu-sections">
-        <section v-for="cat in grupos" :key="cat.nombre" class="section">
+        <!-- 👇 usamos gruposFiltrados -->
+        <section
+          v-for="cat in gruposFiltrados"
+          :key="cat.nombre"
+          class="section"
+        >
           <h2 class="section-title">{{ cat.nombre }}</h2>
 
           <div class="carousel">
-            <button v-for="item in cat.items" :key="item.id" class="card" type="button" @click="abrirDetalle(item)">
+            <button
+              v-for="item in cat.items"
+              :key="item.id"
+              class="card"
+              type="button"
+              @click="abrirDetalle(item)"
+            >
               <img :src="item.image_url || '/Logo.png'" :alt="item.name || 'Producto'" />
               <h3 class="card-title">{{ item.name }}</h3>
               <p class="precio">{{ fmtCOP(item.price) }}</p>
             </button>
           </div>
         </section>
+
+        <!-- Estado vacío cuando no hay coincidencias -->
+        <div v-if="gruposFiltrados.length === 0" class="ion-text-center ion-padding">
+          <p>No encontramos productos para “{{ searchQuery }}”.</p>
+        </div>
       </div>
     </ion-content>
 
@@ -93,10 +114,18 @@
     </ion-modal>
 
     <!-- Action Sheets -->
-    <ion-action-sheet :is-open="showAddSheet" header="Selecciona una adición" :buttons="additionActions"
-      @didDismiss="showAddSheet = false" />
-    <ion-action-sheet :is-open="showDrinkSheet" header="Selecciona una bebida" :buttons="drinkActions"
-      @didDismiss="showDrinkSheet = false" />
+    <ion-action-sheet
+      :is-open="showAddSheet"
+      header="Selecciona una adición"
+      :buttons="additionActions"
+      @didDismiss="showAddSheet = false"
+    />
+    <ion-action-sheet
+      :is-open="showDrinkSheet"
+      header="Selecciona una bebida"
+      :buttons="drinkActions"
+      @didDismiss="showDrinkSheet = false"
+    />
   </ion-page>
 </template>
 
@@ -117,11 +146,51 @@ import { fmtCOP } from '@/utils/money'
 const router = useRouter()
 function goCart() { router.push('/cart') }
 
+// ==== Catálogo (grupos con items) ====
 const { load, grupos, error } = useCatalog()
 onMounted(load)
 
+// ==== Carrito ====
 const { addOrIncrease, totalQty } = useCart()
 
+// ==== Búsqueda ====
+const searchQuery = ref('')
+
+/** Normaliza (lowercase + sin tildes) para buscar mejor */
+function norm(s?: string | null) {
+  return (s || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+}
+
+function onSearch(e: any) {
+  // con v-model ya se actualiza, esto es por compatibilidad con ionInput
+  searchQuery.value = e?.target?.value ?? searchQuery.value
+}
+
+/**
+ * Construye una copia de `grupos` aplicando filtro por nombre/descripcion.
+ * Oculta grupos vacíos cuando hay texto de búsqueda.
+ */
+const gruposFiltrados = computed(() => {
+  const q = norm(searchQuery.value)
+  if (!q) return grupos.value
+
+  // clona por si acaso (grupos.value podría ser readonly)
+  return (grupos.value || [])
+    .map(g => ({
+      nombre: g.nombre,
+      items: (g.items || []).filter((it: any) => {
+        const inName = norm(it.name).includes(q)
+        const inDesc = norm(it.description).includes(q)
+        return inName || inDesc
+      })
+    }))
+    .filter(g => g.items.length > 0)
+})
+
+// ==== Detalle y extras ====
 const detalleAbierto = ref(false)
 const seleccionado = ref<any>(null)
 
@@ -129,6 +198,7 @@ function abrirDetalle(p: any) { seleccionado.value = p; detalleAbierto.value = t
 function cerrarDetalle() { detalleAbierto.value = false; seleccionado.value = null; clearSelections() }
 
 const basePrice = computed(() => seleccionado.value?.price ?? 0)
+
 const {
   additions, drinks,
   selectedAdditionId, selectedDrinkId,
@@ -308,14 +378,8 @@ function anadirAlCarrito() {
   margin-left: 4px;
 }
 
-.label {
-  white-space: nowrap;
-}
-
-.name {
-  text-align: left;
-  color: #000;
-}
+.label { white-space: nowrap; }
+.name { text-align: left; color: #000; }
 
 .row strong {
   font-weight: 600;
@@ -348,8 +412,5 @@ function anadirAlCarrito() {
   gap: 8px;
 }
 
-.err {
-  color: var(--ion-color-danger);
-  margin-bottom: 8px;
-}
+.err { color: var(--ion-color-danger); margin-bottom: 8px; }
 </style>
