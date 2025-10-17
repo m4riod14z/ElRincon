@@ -5,6 +5,7 @@ import TabsPage from '@/views/TabsPage.vue'
 import HomePage from '@/views/HomePage.vue'
 import RegisterPage from '@/views/RegisterPage.vue'
 import LoginEmailView from '@/views/LoginEmailView.vue'
+import CartPage from '@/views/CartPage.vue'
 
 const routes: Array<RouteRecordRaw> = [
   { path: '/', redirect: '/home' },
@@ -12,6 +13,7 @@ const routes: Array<RouteRecordRaw> = [
   { path: '/home', name: 'home', component: HomePage },
   { path: '/login', name: 'login', component: LoginEmailView },
   { path: '/register', name: 'register', component: RegisterPage },
+  { path: '/cart', name: 'cart', component: CartPage },
 
   {
     path: '/tabs/',

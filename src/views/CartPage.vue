@@ -6,15 +6,17 @@
             </ion-toolbar>
         </ion-header>
 
-        <ion-content class="ion-padding">
+        <ion-content class="ion-padding cart-content with-footer-pad">
             <div v-if="!items.length" class="empty">
                 Tu carrito está vacío.
             </div>
 
-            <ion-list v-else>
+            <ion-list v-else class="cart-list">
                 <CartItem v-for="it in items" :key="it.uid" :item="it" @increase="increase" @decrease="decrease"
                     @remove="remove" />
             </ion-list>
+
+            <div v-if="items.length" class="spacer"></div>
 
             <div v-if="items.length" class="totals">
                 <div class="row">
@@ -87,18 +89,36 @@ function onShip(ev: any) {
 </script>
 
 <style scoped>
+.cart-content {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    height: 100%;
+}
+
+.with-footer-pad {
+    --padding-bottom: calc(72px + var(--ion-safe-area-bottom));
+}
+
+.cart-list {
+    margin: 0;
+}
+
+.spacer {
+    flex: 1 1 auto;
+}
+
 .empty {
     text-align: center;
     color: var(--ion-color-medium);
-    margin-top: 24px;
+    margin-top: 16px;
 }
 
 .totals {
-    margin-top: 14px;
-    border-top: 1px solid #eee;
+    border-top: 1px solid #2c2c2c;
     padding-top: 12px;
     display: grid;
-    gap: 8px;
+    gap: 10px;
 }
 
 .row {
@@ -108,8 +128,8 @@ function onShip(ev: any) {
 }
 
 .row.total {
-    border-top: 1px solid #eee;
-    padding-top: 8px;
+    border-top: 1px solid #2c2c2c;
+    padding-top: 10px;
     font-size: 18px;
     font-weight: 800;
 }
@@ -117,5 +137,16 @@ function onShip(ev: any) {
 .ship {
     max-width: 120px;
     text-align: right;
+}
+
+@media (max-width: 420px) {
+    .totals {
+        gap: 8px;
+    }
+
+    .row span,
+    .row strong {
+        font-size: 14px;
+    }
 }
 </style>

@@ -1,11 +1,12 @@
 <template>
-    <ion-item lines="full">
-        <ion-thumbnail slot="start">
+    <ion-item lines="full" class="cart-row">
+        <ion-thumbnail slot="start" class="thumb">
             <img :src="item.image_url || '/Logo.png'" :alt="item.name" />
         </ion-thumbnail>
 
-        <ion-label>
+        <ion-label class="info">
             <h2 class="name">{{ item.name }}</h2>
+
             <p class="opt">
                 Adición: <strong>{{ item.addition?.name ?? 'Ninguna' }}</strong>
                 <span v-if="item.addition">({{ fmtCOP(item.addition.price) }})</span>
@@ -14,29 +15,31 @@
                 Bebida: <strong>{{ item.drink?.name ?? 'Ninguna' }}</strong>
                 <span v-if="item.drink">({{ fmtCOP(item.drink.price) }})</span>
             </p>
+
             <p class="line-total">
                 <span>Subtotal ítem</span>
                 <strong>{{ fmtCOP(lineTotal) }}</strong>
             </p>
         </ion-label>
 
-        <ion-buttons slot="end" class="qty">
-            <ion-button size="small" fill="outline" @click="$emit('decrease', item.uid)">−</ion-button>
-            <span class="q">{{ item.qty }}</span>
-            <ion-button size="small" fill="outline" @click="$emit('increase', item)">＋</ion-button>
-        </ion-buttons>
+        <!-- 1 solo bloque de acciones al extremo derecho -->
+        <div slot="end" class="actions">
+            <div class="qty">
+                <ion-button size="small" fill="outline" class="qbtn" @click="$emit('decrease', item.uid)">−</ion-button>
+                <span class="q">{{ item.qty }}</span>
+                <ion-button size="small" fill="outline" class="qbtn" @click="$emit('increase', item)">＋</ion-button>
+            </div>
 
-        <ion-buttons slot="end">
-            <ion-button color="danger" fill="clear" @click="$emit('remove', item.uid)">
+            <ion-button color="danger" fill="clear" class="remove" @click="$emit('remove', item.uid)">
                 Eliminar
             </ion-button>
-        </ion-buttons>
+        </div>
     </ion-item>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import { IonItem, IonLabel, IonButton, IonButtons, IonThumbnail } from '@ionic/vue';
+import { IonItem, IonLabel, IonButton, IonThumbnail } from '@ionic/vue';
 import { fmtCOP } from '@/utils/money';
 import type { CartItem } from '@/models/cart';
 
@@ -50,6 +53,30 @@ const lineTotal = computed(() => {
 </script>
 
 <style scoped>
+.cart-row {
+    --padding-start: 8px;
+    --inner-padding-end: 8px;
+    align-items: center;
+}
+
+.thumb {
+    width: 56px;
+    height: 56px;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.thumb img {
+    object-fit: cover;
+}
+
+.info {
+    min-width: 0;
+    white-space: normal;
+    word-break: normal;
+    overflow-wrap: break-word;
+}
+
 .name {
     font-weight: 700;
     margin: 0 0 4px;
@@ -64,14 +91,29 @@ const lineTotal = computed(() => {
 .line-total {
     display: flex;
     justify-content: space-between;
+    align-items: center;
     margin-top: 6px;
 }
 
+.actions {
+    display: grid;
+    gap: 6px;
+    justify-items: end;
+    align-items: center;
+    margin-left: 8px;
+}
+
 .qty {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 6px;
-    margin-right: 6px;
+}
+
+.qbtn {
+    --padding-start: 6px;
+    --padding-end: 6px;
+    height: 28px;
+    min-width: 28px;
 }
 
 .q {
@@ -80,7 +122,10 @@ const lineTotal = computed(() => {
     font-weight: 700;
 }
 
-ion-thumbnail img {
-    object-fit: cover;
+.remove {
+    height: 24px;
+    --padding-start: 0;
+    --padding-end: 0;
+    font-size: 12px;
 }
 </style>

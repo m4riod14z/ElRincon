@@ -1,12 +1,12 @@
 <template>
   <ion-page>
-    <!-- ======= HEADER ======= -->
     <ion-header>
       <ion-toolbar>
         <ion-title>El Rincón</ion-title>
         <ion-buttons slot="end">
-          <ion-button fill="clear">
+          <ion-button fill="clear" @click="goCart">
             <ion-icon :icon="cartOutline" />
+            <ion-badge v-if="totalQty > 0" class="cart-badge">{{ totalQty }}</ion-badge>
           </ion-button>
         </ion-buttons>
       </ion-toolbar>
@@ -16,8 +16,6 @@
       </ion-toolbar>
     </ion-header>
 
-    <!-- ======= CONTENIDO PRINCIPAL ======= -->
-    <!-- Nota: with-custom-tabs añade padding-bottom para no quedar tapado por el footer global -->
     <ion-content class="ion-padding with-custom-tabs">
       <div v-if="error" class="err">{{ error }}</div>
 
@@ -26,13 +24,7 @@
           <h2 class="section-title">{{ cat.nombre }}</h2>
 
           <div class="carousel">
-            <button
-              v-for="item in cat.items"
-              :key="item.id"
-              class="card"
-              type="button"
-              @click="abrirDetalle(item)"
-            >
+            <button v-for="item in cat.items" :key="item.id" class="card" type="button" @click="abrirDetalle(item)">
               <img :src="item.image_url || '/Logo.png'" :alt="item.name || 'Producto'" />
               <h3 class="card-title">{{ item.name }}</h3>
               <p class="precio">{{ fmtCOP(item.price) }}</p>
@@ -59,27 +51,34 @@
           <h2 class="detail-title">{{ seleccionado.name }}</h2>
           <p class="detail-desc">{{ seleccionado.description }}</p>
 
-          <!-- Base + Total -->
+          <!-- Bloque de precios -->
           <div class="price-block">
             <div class="base">
               <span>Precio base</span>
               <strong>{{ fmtCOP(seleccionado.price) }}</strong>
             </div>
+
+            <div class="row">
+              <span class="label">Adición</span>
+              <span class="name">{{ selectedAddition?.name ?? 'Ninguna' }}</span>
+              <strong>{{ fmtCOP(selectedAddition?.price ?? 0) }}</strong>
+            </div>
+
+            <div class="row">
+              <span class="label">Bebida</span>
+              <span class="name">{{ selectedDrink?.name ?? 'Ninguna' }}</span>
+              <strong>{{ fmtCOP(selectedDrink?.price ?? 0) }}</strong>
+            </div>
+
             <div class="total-line">
               <span>Total</span>
               <strong class="total-amount">{{ fmtCOP(total) }}</strong>
             </div>
           </div>
-
-          <!-- Selecciones actuales -->
-          <div class="current">
-            <div>Adición: <strong>{{ additionLabel }}</strong></div>
-            <div>Bebida: <strong>{{ drinkLabel }}</strong></div>
-          </div>
         </div>
       </ion-content>
 
-      <!-- BOTONES PEGADOS AL FONDO -->
+      <!-- Botones -->
       <div class="detail-actions">
         <ion-button expand="block" fill="outline" color="medium" @click="openAddSheet">
           Añadir adición
@@ -93,19 +92,11 @@
       </div>
     </ion-modal>
 
-    <!-- ======= ACTION SHEETS ======= -->
-    <ion-action-sheet
-      :is-open="showAddSheet"
-      header="Selecciona una adición"
-      :buttons="additionActions"
-      @didDismiss="showAddSheet = false"
-    />
-    <ion-action-sheet
-      :is-open="showDrinkSheet"
-      header="Selecciona una bebida"
-      :buttons="drinkActions"
-      @didDismiss="showDrinkSheet = false"
-    />
+    <!-- Action Sheets -->
+    <ion-action-sheet :is-open="showAddSheet" header="Selecciona una adición" :buttons="additionActions"
+      @didDismiss="showAddSheet = false" />
+    <ion-action-sheet :is-open="showDrinkSheet" header="Selecciona una bebida" :buttons="drinkActions"
+      @didDismiss="showDrinkSheet = false" />
   </ion-page>
 </template>
 
@@ -113,33 +104,30 @@
 import { ref, computed, onMounted } from 'vue'
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonIcon,
-  IonSearchbar, IonContent, IonModal, IonActionSheet
+  IonSearchbar, IonContent, IonModal, IonActionSheet, IonBadge
 } from '@ionic/vue'
 import { cartOutline } from 'ionicons/icons'
+import { useRouter } from 'vue-router'
 
 import { useCatalog } from '@/controllers/useCatalog'
 import { useProductDetail } from '@/controllers/useProductDetail'
+import { useCart } from '@/controllers/useCart'
 import { fmtCOP } from '@/utils/money'
 
-// ====== CATÁLOGO ======
+const router = useRouter()
+function goCart() { router.push('/cart') }
+
 const { load, grupos, error } = useCatalog()
 onMounted(load)
 
-// ====== DETALLE ======
+const { addOrIncrease, totalQty } = useCart()
+
 const detalleAbierto = ref(false)
 const seleccionado = ref<any>(null)
 
-function abrirDetalle(p: any) {
-  seleccionado.value = p
-  detalleAbierto.value = true
-}
-function cerrarDetalle() {
-  detalleAbierto.value = false
-  seleccionado.value = null
-  clearSelections()
-}
+function abrirDetalle(p: any) { seleccionado.value = p; detalleAbierto.value = true }
+function cerrarDetalle() { detalleAbierto.value = false; seleccionado.value = null; clearSelections() }
 
-// ====== ADICIONES / BEBIDAS ======
 const basePrice = computed(() => seleccionado.value?.price ?? 0)
 const {
   additions, drinks,
@@ -148,25 +136,10 @@ const {
   loadAdditionsOnce, loadDrinksOnce, clearSelections
 } = useProductDetail(basePrice as unknown as { value: number })
 
-const additionLabel = computed(() =>
-  selectedAddition.value ? `${selectedAddition.value.name} (${fmtCOP(selectedAddition.value.price)})` : 'Ninguna'
-)
-const drinkLabel = computed(() =>
-  selectedDrink.value ? `${selectedDrink.value.name} (${fmtCOP(selectedDrink.value.price)})` : 'Ninguna'
-)
-
-// ====== ACTION SHEETS ======
 const showAddSheet = ref(false)
 const showDrinkSheet = ref(false)
-
-async function openAddSheet() {
-  await loadAdditionsOnce()
-  showAddSheet.value = true
-}
-async function openDrinkSheet() {
-  await loadDrinksOnce()
-  showDrinkSheet.value = true
-}
+async function openAddSheet() { await loadAdditionsOnce(); showAddSheet.value = true }
+async function openDrinkSheet() { await loadDrinksOnce(); showDrinkSheet.value = true }
 
 const additionActions = computed(() => {
   const opts = (additions.value ?? []).map(a => ({
@@ -175,7 +148,6 @@ const additionActions = computed(() => {
   }))
   return [{ text: 'Ninguna', handler: () => { selectedAdditionId.value = null } }, ...opts, { text: 'Cancelar', role: 'cancel' as const }]
 })
-
 const drinkActions = computed(() => {
   const opts = (drinks.value ?? []).map(d => ({
     text: `${d.name} — ${fmtCOP(d.price)}`,
@@ -185,69 +157,199 @@ const drinkActions = computed(() => {
 })
 
 function anadirAlCarrito() {
-  // TODO: Integrar con carrito real
+  if (!seleccionado.value) return
+  addOrIncrease({
+    productId: seleccionado.value.id,
+    name: seleccionado.value.name,
+    image_url: seleccionado.value.image_url || null,
+    basePrice: seleccionado.value.price,
+    addition: selectedAddition.value
+      ? { id: selectedAddition.value.id, name: selectedAddition.value.name, price: selectedAddition.value.price }
+      : null,
+    drink: selectedDrink.value
+      ? { id: selectedDrink.value.id, name: selectedDrink.value.name, price: selectedDrink.value.price }
+      : null,
+    qty: 1
+  })
   cerrarDetalle()
 }
 </script>
 
 <style scoped>
-/* Deja espacio para el footer global de TabsPage (ajusta la altura si cambias el footer) */
-.with-custom-tabs { --padding-bottom: calc(64px + var(--ion-safe-area-bottom)); }
+.with-custom-tabs {
+  --padding-bottom: calc(64px + var(--ion-safe-area-bottom));
+}
+
+.cart-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  transform: translate(35%, -35%);
+  font-size: 10px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
 
 /* Secciones */
-.menu-sections { display: grid; gap: 18px; }
-.section { display: grid; gap: 10px; }
-.section-title { margin: 0; font-size: 18px; font-weight: 800; }
+.menu-sections {
+  display: grid;
+  gap: 18px;
+}
 
-/* Carrusel horizontal */
+.section {
+  display: grid;
+  gap: 10px;
+}
+
+.section-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+/* Cards */
 .carousel {
   display: flex;
   gap: 10px;
   overflow-x: auto;
   padding-bottom: 4px;
-  -webkit-overflow-scrolling: touch;
 }
 
-/* Card */
 .card {
   background: #fff;
   border-radius: 12px;
-  text-align: left;
   padding: 8px;
-  box-shadow: 0 1px 6px rgba(0,0,0,.08);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, .08);
   min-width: 150px;
   max-width: 180px;
   border: 1px solid #f1f5f9;
 }
-.card img { width: 100%; height: 110px; object-fit: cover; border-radius: 10px; }
-.card-title { font-size: 14px; margin: 6px 0 2px; font-weight: 600; color: black; }
-.precio { color: red; font-weight: 700; font-size: 13px; margin: 0; }
 
-/* Modal Detalle */
-.detail-content { --background: #fff; }
-.detail-wrap { max-width: 520px; margin: 0 auto; display: grid; gap: 12px; }
-.detail-img { width: 100%; height: 220px; object-fit: cover; border-radius: 12px; }
-.detail-title { margin: 0; font-weight: 800; font-size: 22px; }
-.detail-desc { margin: 0; color: var(--ion-color-medium); }
+.card img {
+  width: 100%;
+  height: 110px;
+  object-fit: cover;
+  border-radius: 10px;
+}
 
-/* Precios */
-.price-block { display: grid; gap: 6px; margin: 8px 0; }
-.price-block .base { color: var(--ion-color-medium); display: flex; justify-content: space-between; }
-.price-block .total-line { display: flex; justify-content: space-between; border-top: 1px solid #eee; padding-top: 6px; }
-.total-amount { color: #d32f2f; font-size: 20px; font-weight: 800; }
-.current { display: grid; gap: 6px; }
+.card-title {
+  font-size: 14px;
+  margin: 6px 0 2px;
+  font-weight: 600;
+  color: black;
+}
 
-/* Botonera fija del modal */
+.precio {
+  color: red;
+  font-weight: 700;
+  font-size: 13px;
+  margin: 0;
+}
+
+/* ======= Detalle ======= */
+.detail-content {
+  --background: #fff;
+}
+
+.detail-wrap {
+  max-width: 520px;
+  margin: 0 auto;
+  display: grid;
+  gap: 12px;
+}
+
+.detail-img {
+  width: 100%;
+  height: 220px;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+.detail-title {
+  margin: 0;
+  font-weight: 800;
+  font-size: 22px;
+}
+
+.detail-desc {
+  margin: 0;
+  color: var(--ion-color-medium);
+}
+
+.price-block {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0;
+}
+
+.base {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--ion-color-medium);
+  font-size: 15px;
+}
+
+.base strong {
+  color: #000;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 6px;
+  align-items: center;
+  font-size: 14px;
+  color: var(--ion-color-medium);
+  margin-left: 4px;
+}
+
+.label {
+  white-space: nowrap;
+}
+
+.name {
+  text-align: left;
+  color: #000;
+}
+
+.row strong {
+  font-weight: 600;
+  color: var(--ion-color-medium);
+}
+
+.total-line {
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid #eee;
+  padding-top: 6px;
+  margin-top: 4px;
+}
+
+.total-amount {
+  color: #d32f2f;
+  font-size: 20px;
+  font-weight: 800;
+}
+
 .detail-actions {
   position: sticky;
   bottom: 0;
-  left: 0; right: 0;
+  left: 0;
+  right: 0;
   background: #fff;
   padding: 12px 16px 16px;
-  box-shadow: 0 -6px 10px rgba(0,0,0,.06);
+  box-shadow: 0 -6px 10px rgba(0, 0, 0, .06);
   display: grid;
   gap: 8px;
 }
 
-.err { color: var(--ion-color-danger); margin-bottom: 8px; }
+.err {
+  color: var(--ion-color-danger);
+  margin-bottom: 8px;
+}
 </style>
