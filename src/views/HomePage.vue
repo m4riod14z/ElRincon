@@ -7,57 +7,57 @@
     </ion-header>
 
     <ion-content fullscreen class="home-content ion-padding">
-      <div class="wrap">
-        <div class="card">
-          <img src="/Logo.png" alt="Logo" class="logo" />
+      <div class="overlay">
+        <div class="wrap">
+          <div class="card">
+            <img src="/Logo.png" alt="Logo" class="logo" />
 
-          <h1 class="title">¡Bienvenido!</h1>
-          <p class="subtitle">Tu comida rápida favorita, más cerca de ti.</p>
+            <h1 class="title">¡Bienvenido!</h1>
+            <p class="subtitle">Tu comida rápida favorita, más cerca de ti.</p>
 
-          <ion-button
-            expand="block"
-            size="large"
-            class="btn-google"
-            @click="onGoogle"
-          >
-            <span class="g-icon" aria-hidden="true" v-html="googleSvg"></span>
-            <span>Continuar con Google</span>
-          </ion-button>
+            <ion-button
+              expand="block"
+              size="large"
+              class="btn-google"
+              @click="onGoogle"
+            >
+              <span class="g-icon" aria-hidden="true" v-html="googleSvg"></span>
+              <span>Continuar con Google</span>
+            </ion-button>
 
-          <!-- ✅ vuelve a togglear en la misma pantalla -->
-          <ion-button
-            expand="block"
-            size="large"
-            fill="outline"
-            class="btn-email"
-            @click="toggleEmail"
-          >
-            Continuar con correo
-          </ion-button>
+            <ion-button
+              expand="block"
+              size="large"
+              fill="outline"
+              class="btn-email"
+              @click="toggleEmail"
+            >
+              Continuar con correo
+            </ion-button>
 
-          <!-- ✅ bloque desplegable con Ingresar/Registrarse -->
-          <ion-card v-if="showEmailOptions" class="email-card">
-            <ion-card-content>
-              <div class="email-actions">
-                <ion-button
-                  expand="block"
-                  color="medium"
-                  fill="solid"
-                  @click="onLogin"
-                >
-                  Ingresar
-                </ion-button>
-                <ion-button
-                  expand="block"
-                  color="tertiary"
-                  fill="solid"
-                  @click="onRegister"
-                >
-                  Registrarse
-                </ion-button>
-              </div>
-            </ion-card-content>
-          </ion-card>
+            <ion-card v-if="showEmailOptions" class="email-card">
+              <ion-card-content>
+                <div class="email-actions">
+                  <ion-button
+                    expand="block"
+                    color="medium"
+                    fill="solid"
+                    @click="onLogin"
+                  >
+                    Ingresar
+                  </ion-button>
+                  <ion-button
+                    expand="block"
+                    color="tertiary"
+                    fill="solid"
+                    @click="onRegister"
+                  >
+                    Registrarse
+                  </ion-button>
+                </div>
+              </ion-card-content>
+            </ion-card>
+          </div>
         </div>
       </div>
     </ion-content>
@@ -94,31 +94,105 @@ const googleSvg = computed(() => `
 </script>
 
 <style scoped>
+/* ===== Fondo con imagen ===== */
 .home-content {
-  --padding-start: 0;
-  --padding-end: 0;
-  background: linear-gradient(165deg, #fff 0%, #fff7f7 40%, #fff0f0 100%);
+  --background: none;
+  background-image: url('/fondorincon.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   display: grid;
   place-items: center;
+  min-height: 100%;
+  position: relative;
 }
+
+
+/* ===== Tarjeta central ===== */
 .wrap { width: min(520px, 92vw); margin: 24px auto; }
 .card {
-  background: white; border-radius: 20px; padding: 24px;
-  box-shadow: 0 10px 15px rgba(0,0,0,0.06), 0 4px 6px rgba(0,0,0,0.05);
-  display: grid; gap: 14px; text-align: center;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 10px 15px rgba(0,0,0,0.15);
+  display: grid;
+  gap: 14px;
+  text-align: center;
 }
-.logo { width: 88px; height: 88px; object-fit: contain; margin: 0 auto 6px; }
-.title { margin: 4px 0 0; font-weight: 800; letter-spacing: .2px; }
-.subtitle { margin: 0; color: var(--ion-color-medium); }
-ion-button { --border-radius: 14px; --box-shadow: none; }
+
+.logo {
+  width: 88px;
+  height: 88px;
+  object-fit: contain;
+  margin: 0 auto 6px;
+}
+
+.title {
+  margin: 4px 0 0;
+  font-weight: 800;
+  letter-spacing: .2px;
+  color: #111;
+}
+
+.subtitle {
+  margin: 0;
+  color: #444;
+}
+
+ion-button {
+  --border-radius: 14px;
+  --box-shadow: none;
+}
+
 .btn-google {
-  --background: #ffffff; --border-color: #e5e7eb; --border-style: solid; --border-width: 1px; color: #111827;
+  --background: #ffffff;
+  --border-color: #e5e7eb;
+  --border-style: solid;
+  --border-width: 1px;
+  color: #111827;
 }
-.btn-google:hover { filter: brightness(0.98); }
-.btn-email { --border-radius: 14px; }
-.g-icon { display: inline-grid; place-items: center; margin-right: 10px; }
-.email-card { border-radius: 16px; border: 1px solid #f1f5f9; }
-.email-actions { display: grid; gap: 10px; }
-.toolbar { --background: transparent; --border-width: 0; }
-.brand { font-weight: 800; letter-spacing: .2px; }
+
+ion-title {
+  text-align: center;
+  width: 100%;
+  justify-content: center;
+  display: flex;
+}
+
+
+.btn-google:hover {
+  filter: brightness(0.98);
+}
+
+.btn-email {
+  --border-radius: 14px;
+}
+
+.g-icon {
+  display: inline-grid;
+  place-items: center;
+  margin-right: 10px;
+}
+
+.email-card {
+  border-radius: 16px;
+  border: 1px solid #f1f5f9;
+}
+
+.email-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.toolbar {
+  --background: transparent;
+  --border-width: 0;
+}
+
+
+.brand {
+  font-weight: 800;
+  letter-spacing: .2px;
+  color: white;
+}
 </style>
