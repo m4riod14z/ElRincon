@@ -2,6 +2,9 @@
     <ion-page>
         <ion-header>
             <ion-toolbar>
+                <ion-buttons slot="start">
+                    <ion-back-button default-href="/tabs/tab1" />
+                </ion-buttons>
                 <ion-title>Carrito</ion-title>
             </ion-toolbar>
         </ion-header>
@@ -59,7 +62,7 @@
 <script setup lang="ts">
 import {
     IonPage, IonHeader, IonToolbar, IonTitle, IonContent,
-    IonList, IonButtons, IonButton, IonFooter, IonInput
+    IonList, IonButtons, IonButton, IonFooter, IonInput, IonBackButton
 } from '@ionic/vue';
 import CartItem from '@/components/CartItem.vue';
 import { useCart } from '@/controllers/useCart';
