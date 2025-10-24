@@ -14,6 +14,8 @@ const routes: Array<RouteRecordRaw> = [
   { path: '/login', name: 'login', component: LoginEmailView },
   { path: '/register', name: 'register', component: RegisterPage },
   { path: '/cart', name: 'cart', component: CartPage },
+  { path: '/payment', name: 'payment', component: () => import('@/views/PaymentPage.vue') },
+
 
   {
     path: '/tabs/',
