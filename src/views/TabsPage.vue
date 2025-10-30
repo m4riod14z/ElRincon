@@ -35,18 +35,31 @@ import { restaurantOutline, receiptOutline, personOutline } from 'ionicons/icons
 <style scoped>
 /* Estilo “segment” para la tab bar */
 .segmented {
-  --background: var(--ion-color-step-50, #1f1f1f);
-  --color: var(--ion-color-medium);
-  --color-selected: var(--ion-color-primary);
+  /* fondo y colores por defecto */
+  --background: var(--ion-color-step-50, #969292);
+  /* color para iconos/labels no seleccionados */
+  --color: var(--ion-color-medium, #9ca3af);
+  /* color para iconos/labels seleccionados */
+  --color-selected: var(--ion-color-primary, #2563eb);
   border-top: 1px solid rgba(255,255,255,0.06);
 }
 .segmented ion-tab-button {
   --padding-start: 10px;
   --padding-end: 10px;
-  --color: var(--ion-color-medium);
+  /* Aseguramos que el color por defecto use la variable --color */
+  --color: var(--color);
+  color: var(--color); /* fallback visible en DOM internals */
 }
 .segmented ion-tab-button.tab-selected {
-  --color-selected: var(--ion-color-primary);
-  border-top: 2px solid var(--ion-color-primary);
+  /* Cuando está seleccionado, forzamos el color seleccionado */
+  --color: var(--color-selected);
+  color: var(--color-selected);
+  border-top: 2px solid var(--color-selected);
+}
+
+/* Aseguramos que iconos y labels hereden el color del ion-tab-button */
+.segmented ion-tab-button ion-icon,
+.segmented ion-tab-button ion-label {
+  color: inherit !important;
 }
 </style>

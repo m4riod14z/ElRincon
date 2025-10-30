@@ -104,7 +104,7 @@
         <ion-button expand="block" fill="outline" color="medium" @click="openAddSheet">
           Añadir adición
         </ion-button>
-        <ion-button expand="block" fill="outline" color="tertiary" @click="openDrinkSheet">
+        <ion-button expand="block" fill="outline" color="medium" @click="openDrinkSheet">
           Añadir bebida
         </ion-button>
         <ion-button expand="block" color="primary" @click="anadirAlCarrito">
@@ -314,7 +314,7 @@ function anadirAlCarrito() {
 }
 
 .precio {
-  color: red;
+  color: rgb(30, 51, 183);
   font-weight: 700;
   font-size: 13px;
   margin: 0;
@@ -322,7 +322,7 @@ function anadirAlCarrito() {
 
 /* ======= Detalle ======= */
 .detail-content {
-  --background: #fff;
+  --background: #fffffe;
 }
 
 .detail-wrap {
@@ -395,7 +395,7 @@ function anadirAlCarrito() {
 }
 
 .total-amount {
-  color: #d32f2f;
+  color: #1c5dcd;
   font-size: 20px;
   font-weight: 800;
 }
