@@ -80,6 +80,7 @@ import { supabase } from '@/services/SupabaseClient'
 import { useRouter } from 'vue-router'
 import OrderList from '@/components/OrderList.vue'
 import { useOrders } from '@/controllers/useOrders'
+import { createOrUpdateProfile } from '@/controllers/ProfileController'
 
 const router = useRouter()
 const { entregados } = useOrders()
@@ -140,34 +141,38 @@ async function loadProfile() {
 }
 
 async function saveProfile() {
-  try {
-    err.value = ''
-    ok.value = ''
-    if (!userId.value) return
-    if (!/\S+@\S+\.\S+/.test(form.email.trim())) throw new Error('Correo inválido.')
-    if (form.phone && !/^\d{7,10}$/.test(form.phone)) throw new Error('Teléfono inválido.')
+    try {
+      err.value = ''
+      ok.value = ''
+      if (!userId.value) return
+      if (!/\S+@\S+\.\S+/.test(form.email.trim())) throw new Error('Correo inválido.')
+      if (form.phone && !/^\d{7,10}$/.test(form.phone)) throw new Error('Teléfono inválido.')
 
-    saving.value = true
-    const payload = {
-      id: userId.value,
-      first_name: form.first_name.trim(),
-      last_name: form.last_name.trim(),
-      email: form.email.trim(),
-      phone: form.phone.trim()
+      saving.value = true
+      
+      await createOrUpdateProfile({
+        id: userId.value,
+        first_name: form.first_name.trim(),
+        last_name: form.last_name.trim(),
+        email: form.email.trim(),
+        phone: form.phone.trim()
+      });
+
+      const payload = {
+        first_name: form.first_name.trim(),
+        last_name: form.last_name.trim(),
+        email: form.email.trim(),
+        phone: form.phone.trim()
+      };
+      
+      Object.assign(profile, payload)
+      ok.value = 'Cambios guardados'
+      toastOpen.value = true
+    } catch (e:any) {
+      err.value = e?.message ?? 'No fue posible guardar.'
+    } finally {
+      saving.value = false
     }
-    const { error } = await supabase
-      .from('profiles')
-      .upsert(payload, { onConflict: 'id' })  // crea o actualiza por id
-    if (error) throw error
-
-    Object.assign(profile, payload)
-    ok.value = 'Cambios guardados'
-    toastOpen.value = true
-  } catch (e:any) {
-    err.value = e?.message ?? 'No fue posible guardar.'
-  } finally {
-    saving.value = false
-  }
 }
 
 async function logout() {
