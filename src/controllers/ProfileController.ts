@@ -52,3 +52,32 @@ export async function createOrUpdateProfile(payload: {
         throw error;
     }
 }
+
+/**
+ * Asegura que exista una fila en `profiles` para el usuario autenticado.
+ * Si no existe, crea una con rol 'client' por defecto.
+ */
+export async function ensureProfileRow() {
+    const { data: ures, error: uerr } = await supabase.auth.getUser();
+    if (uerr || !ures.user) return;
+    const user = ures.user;
+
+    const { data: existing } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', user.id)
+        .maybeSingle();
+
+    if (!existing) {
+        await supabase
+            .from('profiles')
+            .upsert({
+                id: user.id,
+                first_name: '',
+                last_name: '',
+                email: user.email ?? '',
+                phone: '',
+                role: 'client'
+            }, { onConflict: 'id' })
+    }
+}

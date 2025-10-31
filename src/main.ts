@@ -4,6 +4,9 @@ import App from './App.vue'
 import router from './router'
 import { IonicVue } from '@ionic/vue'
 import { supabase } from '@/services/SupabaseClient'
+import { App as CapacitorApp } from '@capacitor/app'
+import { Capacitor } from '@capacitor/core'
+import { ensureProfileRow } from '@/controllers/ProfileController'
 
 import '@ionic/vue/css/core.css'
 import '@ionic/vue/css/normalize.css'
@@ -45,3 +48,34 @@ supabase.auth.onAuthStateChange(async (event, session) => {
 })
 
 router.isReady().then(() => app.mount('#app'))
+
+// Deep link handler for Supabase OAuth on native platforms
+if (Capacitor.isNativePlatform()) {
+  CapacitorApp.addListener('appUrlOpen', async (event) => {
+    const url = event?.url || ''
+    if (url.startsWith('io.ionic.starter://auth/callback')) {
+      try {
+        // Prefer PKCE auth code from query string
+        let exchanged = false
+        try {
+          const parsed = new URL(url)
+          const code = parsed.searchParams.get('code')
+          if (code) {
+            await supabase.auth.exchangeCodeForSession(code)
+            exchanged = true
+          }
+        } catch {}
+        // Fallback: some SDK versions accept the full callback URL string
+        if (!exchanged) {
+          await supabase.auth.exchangeCodeForSession(url)
+        }
+        // Crea perfil por defecto si no existe (rol 'client')
+        await ensureProfileRow()
+        try { localStorage.removeItem('otp_pending') } catch {}
+        go('/tabs/tab1')
+      } catch (err) {
+        console.error('OAuth deep link error:', err)
+      }
+    }
+  })
+}

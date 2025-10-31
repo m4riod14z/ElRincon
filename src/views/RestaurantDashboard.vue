@@ -2,7 +2,7 @@
   <ion-page>
     <ion-header translucent>
       <ion-toolbar>
-        <ion-title>Panel del Restaurante</ion-title>
+        <ion-title>Restaurante</ion-title>
       </ion-toolbar>
     </ion-header>
 
@@ -329,15 +329,31 @@ async function removeDrink(d: OptionRow) {
 </script>
 
 <style scoped>
+.ion-page ion-title,
+ion-title { text-align: center; width: 100%; justify-content: center; display: flex; }
 .section { margin-bottom: 24px; }
 .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-.carousel { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 6px; scroll-snap-type: x mandatory; }
-.slide { flex: 0 0 auto; scroll-snap-align: start; }
-.card { width: 240px; background: var(--ion-background-color-step-50,#1e1e1e); border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.15); display: grid; gap: 8px; }
-.thumb { width: 100%; height: 120px; object-fit: cover; background: #eee; }
-.info { padding: 8px 12px; display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
-.title { font-weight: 700; font-size: 14px; }
-.price { font-weight: 600; color: var(--ion-color-primary); }
-.actions { padding: 4px 8px 8px; display: grid; gap: 6px; }
-.row { display: flex; gap: 8px; }
+.carousel { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 6px; }
+.slide { flex: 0 0 auto; }
+.card { background: #fff; border-radius: 12px; padding: 12px; box-shadow: 0 1px 6px rgba(0,0,0,.08); min-width: 200px; max-width: 240px; border: 1px solid #f1f5f9; }
+.thumb, .card img { width: 100%; height: 140px; object-fit: cover; border-radius: 10px; background: #eee; }
+.info { padding: 0; display: grid; }
+.title { font-weight: 600; font-size: 14px; margin: 6px 0 2px; color: black; }
+.price { color: rgb(30, 51, 183); font-weight: 700; font-size: 13px; margin: 0; }
+.actions { padding: 6px 2px 0; display: grid; gap: 8px; }
+.actions ion-toggle { font-size: 12px; white-space: normal; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: space-between; }
+
+@media (min-width: 360px) {
+  .card { min-width: 210px; max-width: 250px; }
+  .thumb, .card img { height: 150px; }
+}
+@media (min-width: 480px) {
+  .card { min-width: 230px; max-width: 270px; }
+  .thumb, .card img { height: 160px; }
+}
+@media (min-width: 640px) {
+  .card { min-width: 250px; max-width: 300px; }
+  .thumb, .card img { height: 180px; }
+}
 </style>

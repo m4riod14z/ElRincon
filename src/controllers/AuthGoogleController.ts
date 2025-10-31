@@ -8,10 +8,15 @@ export class AuthController {
   }
 
   async continueWithGoogle() {
+    // Deep link redirect for native Android (must be allowed in Supabase Auth settings)
+    const redirectTo = 'io.ionic.starter://auth/callback'
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.origin
+        redirectTo,
+        // PKCE is recommended for mobile OAuth flows
+        queryParams: { prompt: 'consent' }
       }
     })
     if (error) {
