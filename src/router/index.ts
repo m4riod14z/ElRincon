@@ -6,6 +6,7 @@ import HomePage from '@/views/HomePage.vue'
 import RegisterPage from '@/views/RegisterPage.vue'
 import LoginEmailView from '@/views/LoginEmailView.vue'
 import CartPage from '@/views/CartPage.vue'
+import { getCurrentUserRole } from '@/controllers/ProfileController'
 
 const routes: Array<RouteRecordRaw> = [
   { path: '/', redirect: '/home' },
@@ -15,6 +16,7 @@ const routes: Array<RouteRecordRaw> = [
   { path: '/register', name: 'register', component: RegisterPage },
   { path: '/cart', name: 'cart', component: CartPage },
   { path: '/payment', name: 'payment', component: () => import('@/views/PaymentPage.vue') },
+  { path: '/restaurant', name: 'restaurant', component: () => import('@/views/RestaurantDashboard.vue') },
 
 
   {
@@ -32,6 +34,23 @@ const routes: Array<RouteRecordRaw> = [
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes
+})
+
+// Redirecciones por rol básicas
+router.beforeEach(async (to) => {
+  try {
+    const role = await getCurrentUserRole().catch(() => null)
+    if (role === 'restaurant') {
+      if (to.path === '/' || to.name === 'home' || to.path.startsWith('/tabs')) {
+        return { name: 'restaurant' }
+      }
+    } else if (to.name === 'restaurant') {
+      return { name: 'home' }
+    }
+  } catch {
+    // sin sesión o sin perfil: continuar
+  }
+  return true
 })
 
 export default router

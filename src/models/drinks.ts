@@ -11,3 +11,32 @@ export async function fetchDrinks(): Promise<OptionRow[]> {
     if (error) throw error;
     return (data ?? []) as OptionRow[];
 }
+
+export async function fetchAllDrinks(): Promise<OptionRow[]> {
+    const { data, error } = await supabase
+        .from("drinks")
+        .select("id,name,price,available")
+        .order("name", { ascending: true });
+    if (error) throw error;
+    return (data ?? []) as OptionRow[];
+}
+
+export async function upsertDrink(payload: Partial<OptionRow> & { name: string; price: number }) {
+    const { data, error } = await supabase
+        .from("drinks")
+        .upsert(payload, { onConflict: "id" })
+        .select()
+        .single();
+    if (error) throw error;
+    return data as OptionRow;
+}
+
+export async function deleteDrinkById(id: number) {
+    const { error } = await supabase.from("drinks").delete().eq("id", id);
+    if (error) throw error;
+}
+
+export async function setDrinkAvailability(id: number, available: boolean) {
+    const { error } = await supabase.from("drinks").update({ available }).eq("id", id);
+    if (error) throw error;
+}
