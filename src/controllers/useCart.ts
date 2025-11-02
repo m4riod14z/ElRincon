@@ -1,15 +1,18 @@
 import { ref, computed, watch } from "vue";
 import type { CartItem, CartAddition, CartDrink, CartSnapshot } from "@/models/cart";
 import { makeCartUID } from "@/models/cart";
+import { supabase } from "@/services/SupabaseClient";
 
-const STORAGE_KEY = "cart:v1";
+// Namespace cart by user to avoid leaking items across accounts
+const STORAGE_PREFIX = "cart:v1:";
+let currentKey = STORAGE_PREFIX + "guest";
 
 const items = ref<CartItem[]>([]);
 const shipping = ref<number>(0);
 
 function loadFromStorage() {
     try {
-        const raw = localStorage.getItem(STORAGE_KEY);
+        const raw = localStorage.getItem(currentKey);
         if (!raw) return;
         const snap = JSON.parse(raw) as CartSnapshot;
         items.value = Array.isArray(snap.items) ? snap.items : [];
@@ -25,10 +28,31 @@ function saveToStorage() {
         items: items.value,
         shipping: shipping.value,
     };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(snap));
+    try { localStorage.setItem(currentKey, JSON.stringify(snap)); } catch {}
 }
 
-loadFromStorage();
+// Resolve initial key based on current auth user, then load
+supabase.auth.getUser().then(({ data }) => {
+    const uid = data?.user?.id ?? "guest";
+    currentKey = STORAGE_PREFIX + uid;
+    loadFromStorage();
+}).catch(() => {
+    currentKey = STORAGE_PREFIX + "guest";
+    loadFromStorage();
+});
+
+// When auth state changes, switch storage key and load that user's cart
+supabase.auth.onAuthStateChange((_event, session) => {
+    const uid = session?.user?.id ?? "guest";
+    const newKey = STORAGE_PREFIX + uid;
+    if (newKey !== currentKey) {
+        currentKey = newKey;
+        // Load the target user's cart; default to empty if none
+        items.value = [];
+        shipping.value = 0;
+        loadFromStorage();
+    }
+});
 watch([items, shipping], saveToStorage, { deep: true });
 
 const subtotalProducts = computed(() =>

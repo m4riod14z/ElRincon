@@ -49,14 +49,8 @@
         </div>
         <div class="row">
           <span>Costo de envío</span>
-          <ion-input
-            type="number"
-            inputmode="numeric"
-            class="ship"
-            :value="shipping"
-            @ionInput="onShip($event)"
-            placeholder="0"
-          />
+          <ion-input type="number" inputmode="numeric" class="ship" :value="shipping" @ionInput="onShip($event)"
+            placeholder="0" />
         </div>
         <div class="row total">
           <span>Total a pagar</span>
@@ -90,20 +84,15 @@
       </ion-toolbar>
     </ion-footer>
 
-    <ion-alert
-      :is-open="alertOpen"
-      header="No podemos confirmar"
-      :message="issuesHtml"
-      :buttons="['OK']"
-      @didDismiss="alertOpen = false"
-    />
+    <ion-alert :is-open="alertOpen" header="No podemos confirmar" :message="issuesHtml" :buttons="['OK']"
+      @didDismiss="alertOpen = false" />
   </ion-page>
 </template>
 
 <script setup lang="ts">
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonList, IonButtons, IonButton,
-  IonFooter, IonInput, IonBackButton, IonCard, IonCardContent, IonText, IonAlert, IonSpinner,
+  IonFooter, IonInput, IonBackButton, IonCard, IonCardContent, IonAlert, IonSpinner,
   IonItem, IonLabel, IonThumbnail
 } from '@ionic/vue'
 import { useCart } from '@/controllers/useCart'
@@ -138,7 +127,6 @@ function onShip(ev: any) {
   setShipping(v)
 }
 
-/* ===== RF-11 Disponibilidad ===== */
 const checking = ref(false)
 const issues = ref<AvailabilityIssue[]>([])
 const alertOpen = ref(false)
@@ -165,9 +153,9 @@ function removeUnavailable() {
   for (let i = items.value.length - 1; i >= 0; i--) {
     const it = items.value[i]
     const bad = issues.value.some(x =>
-      (x.kind === 'product'  && x.id === it.productId) ||
+      (x.kind === 'product' && x.id === it.productId) ||
       (x.kind === 'addition' && x.id === it.addition?.id) ||
-      (x.kind === 'drink'    && x.id === it.drink?.id)
+      (x.kind === 'drink' && x.id === it.drink?.id)
     )
     if (bad) remove(it.uid)   // <- uid string
   }
@@ -186,20 +174,74 @@ async function confirmarPedido() {
 </script>
 
 <style scoped>
-.cart-content { display:flex; flex-direction:column; gap:12px; height:100%; }
-.with-footer-pad { --padding-bottom: calc(72px + var(--ion-safe-area-bottom)); }
-.cart-list { margin:0; }
-.spacer { flex:1 1 auto; }
-.empty { text-align:center; color:var(--ion-color-medium); margin-top:16px; }
+.cart-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+}
 
-.totals { border-top: 1px solid #2c2c2c; padding-top: 12px; display: grid; gap: 10px; }
-.row { display:flex; justify-content:space-between; align-items:center; }
-.row.total { border-top:1px solid #2c2c2c; padding-top:10px; font-size:18px; font-weight:800; }
-.ship { max-width:120px; text-align:right; }
+.with-footer-pad {
+  --padding-bottom: calc(72px + var(--ion-safe-area-bottom));
+}
 
-.price { margin: 4px 0 0; font-weight: 600; }
+.cart-list {
+  margin: 0;
+}
 
-.warn { border:1px solid #fde7e7; background:#fff7f7; }
-.warn-title { margin:0 0 6px; color:#b71c1c; font-weight:800; }
-.warn-list { margin:0 0 8px; padding-left:16px; }
+.spacer {
+  flex: 1 1 auto;
+}
+
+.empty {
+  text-align: center;
+  color: var(--ion-color-medium);
+  margin-top: 16px;
+}
+
+.totals {
+  border-top: 1px solid #2c2c2c;
+  padding-top: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.row.total {
+  border-top: 1px solid #2c2c2c;
+  padding-top: 10px;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.ship {
+  max-width: 120px;
+  text-align: right;
+}
+
+.price {
+  margin: 4px 0 0;
+  font-weight: 600;
+}
+
+.warn {
+  border: 1px solid #fde7e7;
+  background: #fff7f7;
+}
+
+.warn-title {
+  margin: 0 0 6px;
+  color: #b71c1c;
+  font-weight: 800;
+}
+
+.warn-list {
+  margin: 0 0 8px;
+  padding-left: 16px;
+}
 </style>

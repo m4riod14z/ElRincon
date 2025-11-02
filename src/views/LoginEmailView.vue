@@ -5,7 +5,7 @@
                 <IonButtons slot="start">
                     <IonBackButton default-href="/tabs/tab1" />
                 </IonButtons>
-                <IonTitle>El RincÃ³n</IonTitle>
+                <IonTitle>El Rincón</IonTitle>
             </IonToolbar>
         </IonHeader>
 
@@ -19,7 +19,7 @@
 
             <!-- Email -->
             <IonItem lines="none" class="field ion-no-padding">
-                <IonLabel position="stacked" class="stacked-label">Correo electrÃ³nico</IonLabel>
+                <IonLabel position="stacked" class="stacked-label">Correo electrónico</IonLabel>
                 <div class="input-frame" :class="{ invalid: !!emailError }">
                     <IonInput type="email" placeholder="tunombre@ejemplo.com" v-model="email" inputmode="email"
                         autocomplete="email" @ionBlur="touchedEmail = true" />
@@ -27,13 +27,13 @@
             </IonItem>
             <IonText v-if="emailError" color="danger" class="hint">{{ emailError }}</IonText>
 
-            <!-- ContraseÃ±a -->
+            <!-- Contraseña -->
             <IonItem lines="none" class="field ion-no-padding">
-                <IonLabel position="stacked" class="stacked-label">ContraseÃ±a</IonLabel>
+                <IonLabel position="stacked" class="stacked-label">Contraseña</IonLabel>
                 <div class="input-frame with-eye" :class="{ invalid: !!passwordError }">
-                    <IonInput :type="showPassword ? 'text' : 'password'" placeholder="Ingresa tu contraseÃ±a"
+                    <IonInput :type="showPassword ? 'text' : 'password'" placeholder="Ingresa tu contraseña"
                         v-model="password" autocomplete="current-password" @ionBlur="touchedPassword = true" />
-                    <button type="button" class="eye-plain" @click.stop="togglePassword" aria-label="Ver contraseÃ±a">
+                    <button type="button" class="eye-plain" @click.stop="togglePassword" aria-label="Ver contraseña">
                         <IonIcon :icon="showPassword ? eyeOffOutline : eyeOutline" />
                     </button>
                 </div>
@@ -43,7 +43,7 @@
             <!-- Continuar -->
             <IonButton expand="block" color="danger" :disabled="!formOk || loading" @click="onSubmit"
                 class="submit-btn">
-                {{ loading ? 'Ingresandoâ€¦' : 'Continuar' }}
+                {{ loading ? 'Ingresando' : 'Continuar' }}
             </IonButton>
         </IonContent>
     </IonPage>
@@ -51,8 +51,8 @@
 
 <script setup lang="ts">
 import {
-  IonPage, IonHeader, IonToolbar, IonButtons, IonBackButton, IonTitle,
-  IonContent, IonItem, IonLabel, IonInput, IonButton, IonIcon, IonText
+    IonPage, IonHeader, IonToolbar, IonButtons, IonBackButton, IonTitle,
+    IonContent, IonItem, IonLabel, IonInput, IonButton, IonIcon, IonText
 } from '@ionic/vue'
 import { eyeOutline, eyeOffOutline } from 'ionicons/icons'
 import { ref, computed, watch } from 'vue'
@@ -75,59 +75,60 @@ const authAlertVisible = ref(false)
 let authAlertTimer: ReturnType<typeof setTimeout> | null = null
 
 function showAuthAlert(msg: string, ms = 2500) {
-  authAlert.value = msg
-  authAlertVisible.value = true
-  if (authAlertTimer) clearTimeout(authAlertTimer)
-  authAlertTimer = setTimeout(() => {
-    authAlertVisible.value = false
-    authAlert.value = ''
-    authAlertTimer = null
-  }, ms)
+    authAlert.value = msg
+    authAlertVisible.value = true
+    if (authAlertTimer) clearTimeout(authAlertTimer)
+    authAlertTimer = setTimeout(() => {
+        authAlertVisible.value = false
+        authAlert.value = ''
+        authAlertTimer = null
+    }, ms)
 }
 
 const emailError = computed(() => {
-  if (!touchedEmail.value) return ''
-  if (!isNotEmpty(email.value)) return 'El correo es obligatorio'
-  if (!isEmail(email.value)) return 'Ingrese un correo válido'
-  return ''
+    if (!touchedEmail.value) return ''
+    if (!isNotEmpty(email.value)) return 'El correo es obligatorio'
+    if (!isEmail(email.value)) return 'Ingrese un correo válido'
+    return ''
 })
 
 const passwordError = computed(() => {
-  if (!touchedPassword.value) return ''
-  if (!isNotEmpty(password.value)) return 'La contraseña es obligatoria'
-  return ''
+    if (!touchedPassword.value) return ''
+    if (!isNotEmpty(password.value)) return 'La contraseña es obligatoria'
+    return ''
 })
 
 const formOk = computed(() =>
-  isNotEmpty(email.value) && isEmail(email.value) && isNotEmpty(password.value)
+    isNotEmpty(email.value) && isEmail(email.value) && isNotEmpty(password.value)
 )
 
 // Si el usuario vuelve a tipear, escondemos el aviso temporal
 watch([email, password], () => {
-  authAlertVisible.value = false
-  authAlert.value = ''
-  if (authAlertTimer) { clearTimeout(authAlertTimer); authAlertTimer = null }
+    authAlertVisible.value = false
+    authAlert.value = ''
+    if (authAlertTimer) { clearTimeout(authAlertTimer); authAlertTimer = null }
 })
 
 function togglePassword() {
-  showPassword.value = !showPassword.value
+    showPassword.value = !showPassword.value
 }
 
 async function onSubmit() {
-  if (!formOk.value || loading.value) return
+    if (!formOk.value || loading.value) return
 
-  loading.value = true
-  try {
-    await loginWithEmail(email.value, password.value)
-    router.replace('/home')
-  } catch {
-    showAuthAlert('Correo o contraseña incorrectos')
-    touchedPassword.value = true
-  } finally {
-    loading.value = false
-  }
+    loading.value = true
+    try {
+        await loginWithEmail(email.value, password.value)
+        router.replace('/tabs/tab1')
+    } catch {
+        showAuthAlert('Correo o contraseña incorrectos')
+        touchedPassword.value = true
+    } finally {
+        loading.value = false
+    }
 }
-</script><style scoped>
+</script>
+<style scoped>
 .title {
     font-size: 22px;
     font-weight: 800;
@@ -136,8 +137,6 @@ async function onSubmit() {
 
 .field {
     margin-bottom: 10px;
-    /* un poco mÃ¡s de aire */
-    /* Eliminamos paddings internos del IonItem para que no â€œcrezcaâ€ hacia afuera */
     --background: transparent;
     --inner-padding-start: 0;
     --inner-padding-end: 0;
@@ -147,46 +146,39 @@ async function onSubmit() {
     --padding-end: 0;
 }
 
-/* Da espacio entre la etiqueta y el cuadro del input */
 .stacked-label {
     display: block;
     margin: 4px 0 6px;
     font-weight: 600;
 }
 
-/* Marco propio para el input: 100% del ancho del IonItem, sin desbordar */
 .input-frame {
     box-sizing: border-box;
     width: 100%;
     min-height: 44px;
     border: 1px solid var(--ion-color-medium);
     border-radius: 10px;
-    background: var(--ion-item-background, var(--ion-color-step-150, #1e1e1e));
+    background: var(--ion-item-background, #ffffff);
     padding: 6px 12px;
     display: flex;
     align-items: center;
-    /* Ensure absolutely-positioned eye aligns within this frame */
     position: relative;
 }
 
-/* Variante con botÃ³n ojo: deja espacio a la derecha */
 .input-frame.with-eye {
     padding-right: 40px;
 }
 
-/* Cuando hay error, el borde se vuelve rojo pero SIN tocar el label */
 .input-frame.invalid {
     border-color: var(--ion-color-danger);
 }
 
-/* Asegura que el IonInput ocupe todo y no desborde */
 .input-frame ion-input {
     width: 100%;
     --padding-start: 0;
     --padding-end: 0;
 }
 
-/* BotÃ³n del ojo: centrado y ligeramente mÃ¡s grande */
 .eye-plain {
     position: absolute;
     right: 10px;
@@ -205,7 +197,6 @@ async function onSubmit() {
     z-index: 2;
 }
 
-/* Aumentamos suavemente el tamaÃ±o del Ã­cono */
 .eye-plain ion-icon {
     font-size: 1.4rem;
     color: var(--ion-color-medium);
@@ -220,7 +211,6 @@ async function onSubmit() {
     font-size: 12px;
 }
 
-/* Aviso amarillo temporal */
 .inline-alert {
     background: #fff3cd;
     color: #8a6d3b;
@@ -235,5 +225,3 @@ async function onSubmit() {
     margin-top: 18px;
 }
 </style>
-
-

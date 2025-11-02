@@ -290,7 +290,7 @@ function anadirAlCarrito() {
 }
 
 .card {
-  background: #fff;
+  background: var(--ion-item-background, #fff);
   border-radius: 12px;
   padding: 8px;
   box-shadow: 0 1px 6px rgba(0, 0, 0, .08);
@@ -310,7 +310,8 @@ function anadirAlCarrito() {
   font-size: 14px;
   margin: 6px 0 2px;
   font-weight: 600;
-  color: black;
+  /* Adapt text color to theme */
+  color: var(--ion-text-color);
 }
 
 .precio {
@@ -413,4 +414,9 @@ function anadirAlCarrito() {
 }
 
 .err { color: var(--ion-color-danger); margin-bottom: 8px; }
+
+@media (prefers-color-scheme: dark) {
+  .card { border-color: #000; }
+}
+body.dark .card { border-color: #000; }
 </style>
