@@ -35,13 +35,14 @@ import { restaurantOutline, receiptOutline, personOutline } from 'ionicons/icons
 <style scoped>
 /* Estilo “segment” para la tab bar */
 .segmented {
-  /* fondo y colores por defecto */
-  --background: var(--ion-color-step-50, #969292);
+  /* Fondo coherente con el tema (oscuro/claro) */
+  --background: var(--ion-tab-bar-background, var(--ion-background-color));
   /* color para iconos/labels no seleccionados */
   --color: var(--ion-color-medium, #9ca3af);
   /* color para iconos/labels seleccionados */
   --color-selected: var(--ion-color-primary, #2563eb);
-  border-top: 1px solid rgba(255,255,255,0.06);
+  /* Borde superior acorde al tema */
+  border-top: 1px solid var(--ion-border-color, rgba(0,0,0,0.06));
 }
 .segmented ion-tab-button {
   --padding-start: 10px;
