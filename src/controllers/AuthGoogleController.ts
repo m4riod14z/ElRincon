@@ -1,5 +1,6 @@
 import { supabase } from '@/services/SupabaseClient'
 import type { Router } from 'vue-router'
+import { Capacitor } from '@capacitor/core'
 
 export class AuthController {
   private router: Router
@@ -8,8 +9,10 @@ export class AuthController {
   }
 
   async continueWithGoogle() {
-    // Deep link redirect for native Android (must be allowed in Supabase Auth settings)
-    const redirectTo = 'io.ionic.starter://auth/callback'
+    // Use deep link on native, site origin on web
+    const redirectTo = Capacitor.isNativePlatform()
+      ? 'io.ionic.starter://auth/callback'
+      : window.location.origin
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
