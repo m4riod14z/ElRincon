@@ -5,7 +5,7 @@
                 <h2>Pedido #{{ o.id }}</h2>
                 <p>{{ o.address }}</p>
                 <p>Total: <strong>{{ fmtCOP(o.total) }}</strong></p>
-                <p v-if="showStatus">Estado: {{ o.status }}</p>
+                <p v-if="showStatus">Estado: Entregado</p>
             </ion-label>
 
             <ion-buttons v-if="allowDeliver && o.status === 'DISPATCHED'" slot="end">

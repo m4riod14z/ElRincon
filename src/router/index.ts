@@ -6,7 +6,7 @@ import HomePage from '@/views/HomePage.vue'
 import RegisterPage from '@/views/RegisterPage.vue'
 import LoginEmailView from '@/views/LoginEmailView.vue'
 import CartPage from '@/views/CartPage.vue'
-import { getCurrentUserRole } from '@/controllers/ProfileController'
+import { getCachedUserRole } from '@/controllers/ProfileController'
 
 const routes: Array<RouteRecordRaw> = [
   { path: '/', redirect: '/home' },
@@ -16,8 +16,18 @@ const routes: Array<RouteRecordRaw> = [
   { path: '/register', name: 'register', component: RegisterPage },
   { path: '/cart', name: 'cart', component: CartPage },
   { path: '/payment', name: 'payment', component: () => import('@/views/PaymentPage.vue') },
-  { path: '/restaurant', name: 'restaurant', component: () => import('@/views/RestaurantDashboard.vue') },
 
+  {
+    path: '/restaurant',
+    name: 'restaurant',
+    component: () => import('@/layouts/RestaurantLayout.vue'),
+    children: [
+      { path: '', redirect: { name: 'restaurant-products' } },
+      { path: 'products', name: 'restaurant-products', component: () => import('@/views/RestaurantProductsPage.vue') },
+      { path: 'orders',   name: 'restaurant-orders',   component: () => import('@/views/RestaurantOrdersPage.vue') },
+      { path: 'profile',  name: 'restaurant-profile',  component: () => import('@/views/RestaurantProfilePage.vue') },
+    ],
+  },
 
   {
     path: '/tabs/',
@@ -39,12 +49,12 @@ const router = createRouter({
 // Redirecciones por rol básicas
 router.beforeEach(async (to) => {
   try {
-    const role = await getCurrentUserRole().catch(() => null)
+    const role = await getCachedUserRole().catch(() => null)
     if (role === 'restaurant') {
       if (to.path === '/' || to.name === 'home' || to.path.startsWith('/tabs')) {
-        return { name: 'restaurant' }
+        return { name: 'restaurant-products' }
       }
-    } else if (to.name === 'restaurant') {
+    } else if (to.name === 'restaurant' || to.name?.toString().startsWith('restaurant-')) {
       return { name: 'home' }
     }
   } catch {

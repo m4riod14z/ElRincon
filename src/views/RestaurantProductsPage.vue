@@ -1,11 +1,5 @@
 <template>
   <ion-page>
-    <ion-header translucent>
-      <ion-toolbar>
-        <ion-title>Restaurante</ion-title>
-      </ion-toolbar>
-    </ion-header>
-
     <ion-content class="ion-padding" fullscreen>
       <section class="section">
         <div class="section-header">
@@ -128,7 +122,7 @@
         </ion-content>
       </ion-modal>
 
-      <!-- Modal opciones (adición/bebida) -->
+      <!-- Modal opciones -->
       <ion-modal :is-open="showOptionModal" @didDismiss="closeOptionForm">
         <ion-header>
           <ion-toolbar>
@@ -147,7 +141,7 @@
 
           <ion-item>
             <ion-label position="stacked">Precio</ion-label>
-            <ion-input type="number" v-model.number="optionForm.price" />
+              <ion-input type="number" v-model.number="optionForm.price" />
           </ion-item>
           <ion-text color="danger" v-if="errors.price">{{ errors.price }}</ion-text>
 
@@ -158,23 +152,19 @@
       </ion-modal>
     </ion-content>
   </ion-page>
-  
 </template>
 
 <script setup lang="ts">
 import { onMounted, reactive, ref, computed } from 'vue'
 import {
-  IonPage, IonHeader, IonToolbar, IonTitle, IonContent,
-  IonButton, IonToggle, IonModal,
-  IonItem, IonLabel, IonInput, IonText, IonButtons
+  IonPage, IonContent, IonButton, IonToggle, IonModal,
+  IonItem, IonLabel, IonInput, IonText, IonHeader, IonToolbar, IonTitle, IonButtons
 } from '@ionic/vue'
 import { fmtCOP } from '@/utils/money'
 import type { Product, OptionRow } from '@/models/types'
 import { fetchAllProducts, upsertProduct, deleteProductById, setProductAvailability } from '@/models/products'
 import { fetchAllAdditions, upsertAddition, deleteAdditionById, setAdditionAvailability } from '@/models/additions'
 import { fetchAllDrinks, upsertDrink, deleteDrinkById, setDrinkAvailability } from '@/models/drinks'
-
-// Sin IonSlides (Ionic v8). Carrusel simple por CSS.
 
 const products = ref<Product[]>([])
 const additions = ref<OptionRow[]>([])
@@ -197,13 +187,10 @@ async function loadAll() {
     loading.value = false
   }
 }
-
 onMounted(loadAll)
 
-// Producto modal state
 const showProductModal = ref(false)
 const productForm = reactive<Partial<Product>>({ id: undefined, name: '', price: 0, image_url: '', category: '', available: true })
-
 function openProductForm(p?: Product) {
   if (p) Object.assign(productForm, p)
   else Object.assign(productForm, { id: undefined, name: '', price: 0, image_url: '', category: '', available: true })
@@ -211,13 +198,11 @@ function openProductForm(p?: Product) {
 }
 function closeProductForm() { showProductModal.value = false }
 
-// Option modal state
 type OptionKind = 'addition' | 'drink'
 const optionKind = ref<OptionKind>('addition')
 const optionKindLabel = computed(() => optionKind.value === 'addition' ? 'Adición' : 'Bebida')
 const showOptionModal = ref(false)
 const optionForm = reactive<Partial<OptionRow>>({ id: undefined, name: '', price: 0, available: true })
-
 function openOptionForm(kind: OptionKind, row?: OptionRow) {
   optionKind.value = kind
   if (row) Object.assign(optionForm, row)
@@ -226,38 +211,26 @@ function openOptionForm(kind: OptionKind, row?: OptionRow) {
 }
 function closeOptionForm() { showOptionModal.value = false }
 
-// Validation
 const errors = reactive<{ name?: string; price?: string; image_url?: string }>({})
-
 function validateCommon(name: string, price: number) {
   errors.name = ''
   errors.price = ''
-  if (!name || name.trim().length < 2 || name.trim().length > 80) {
-    errors.name = 'El nombre debe tener entre 2 y 80 caracteres'
-  }
-  if (typeof price !== 'number' || isNaN(price) || price <= 0) {
-    errors.price = 'El precio debe ser mayor que 0'
-  }
+  if (!name || name.trim().length < 2 || name.trim().length > 80) errors.name = 'El nombre debe tener entre 2 y 80 caracteres'
+  if (typeof price !== 'number' || isNaN(price) || price <= 0) errors.price = 'El precio debe ser mayor que 0'
   return !errors.name && !errors.price
 }
-
 function validateImageUrl(url?: string | null) {
   errors.image_url = ''
   if (!url) return true
   try {
-    // acepta http/https
     const u = new URL(url)
-    if (!/^https?:$/.test(u.protocol)) throw new Error('Protocolo no válido')
+    if (!/^https?:$/.test(u.protocol)) throw new Error('bad')
     return true
-  } catch {
-    errors.image_url = 'La imagen debe ser una URL válida (http/https)'
-    return false
-  }
+  } catch { errors.image_url = 'La imagen debe ser una URL válida (http/https)'; return false }
 }
 
-// Save handlers
 async function saveProduct() {
-  const ok = validateCommon(productForm.name || '', Number(productForm.price)) && validateImageUrl(productForm.image_url as string | undefined)
+  const ok = validateCommon(productForm.name || '', Number(productForm.price)) && validateImageUrl(productForm.image_url as any)
   if (!ok) return
   saving.value = true
   try {
@@ -282,12 +255,22 @@ async function saveOption() {
   saving.value = true
   try {
     if (optionKind.value === 'addition') {
-      const saved = await upsertAddition({ id: optionForm.id as number | undefined, name: (optionForm.name || '').trim(), price: Number(optionForm.price), available: optionForm.available ?? true })
+      const saved = await upsertAddition({
+        id: optionForm.id as number | undefined,
+        name: (optionForm.name || '').trim(),
+        price: Number(optionForm.price),
+        available: optionForm.available ?? true
+      })
       const idx = additions.value.findIndex(a => a.id === saved.id)
       if (idx >= 0) additions.value.splice(idx, 1, saved)
       else additions.value.unshift(saved)
     } else {
-      const saved = await upsertDrink({ id: optionForm.id as number | undefined, name: (optionForm.name || '').trim(), price: Number(optionForm.price), available: optionForm.available ?? true })
+      const saved = await upsertDrink({
+        id: optionForm.id as number | undefined,
+        name: (optionForm.name || '').trim(),
+        price: Number(optionForm.price),
+        available: optionForm.available ?? true
+      })
       const idx = drinks.value.findIndex(d => d.id === saved.id)
       if (idx >= 0) drinks.value.splice(idx, 1, saved)
       else drinks.value.unshift(saved)
@@ -296,7 +279,6 @@ async function saveOption() {
   } finally { saving.value = false }
 }
 
-// Toggle handlers
 async function toggleProduct(p: Product) {
   const next = !p.available
   await setProductAvailability(p.id, next)
@@ -313,7 +295,6 @@ async function toggleDrink(d: OptionRow) {
   d.available = !!next
 }
 
-// Delete handlers
 async function removeProduct(p: Product) {
   await deleteProductById(p.id)
   products.value = products.value.filter(x => x.id !== p.id)
@@ -329,31 +310,114 @@ async function removeDrink(d: OptionRow) {
 </script>
 
 <style scoped>
-.ion-page ion-title,
-ion-title { text-align: center; width: 100%; justify-content: center; display: flex; }
-.section { margin-bottom: 24px; }
-.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-.carousel { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 6px; }
-.slide { flex: 0 0 auto; }
-.card { background: #fff; border-radius: 12px; padding: 12px; box-shadow: 0 1px 6px rgba(0,0,0,.08); min-width: 200px; max-width: 240px; border: 1px solid #f1f5f9; }
-.thumb, .card img { width: 100%; height: 140px; object-fit: cover; border-radius: 10px; background: #eee; }
-.info { padding: 0; display: grid; }
-.title { font-weight: 600; font-size: 14px; margin: 6px 0 2px; color: black; }
-.price { color: rgb(30, 51, 183); font-weight: 700; font-size: 13px; margin: 0; }
-.actions { padding: 6px 2px 0; display: grid; gap: 8px; }
-.actions ion-toggle { font-size: 12px; white-space: normal; }
-.row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: space-between; }
+.section {
+  margin-bottom: 24px;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.carousel {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+}
+
+.slide {
+  flex: 0 0 auto;
+}
+
+.card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, .08);
+  min-width: 200px;
+  max-width: 240px;
+  border: 1px solid #f1f5f9;
+}
+
+.thumb,
+.card img {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+  border-radius: 10px;
+  background: #eee;
+}
+
+.info {
+  padding: 0;
+  display: grid;
+}
+
+.title {
+  font-weight: 600;
+  font-size: 14px;
+  margin: 6px 0 2px;
+  color: black;
+}
+
+.price {
+  color: rgb(30, 51, 183);
+  font-weight: 700;
+  font-size: 13px;
+  margin: 0;
+}
+
+.actions {
+  padding: 6px 2px 0;
+  display: grid;
+  gap: 8px;
+}
+
+.actions ion-toggle {
+  font-size: 12px;
+  white-space: normal;
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
 
 @media (min-width: 360px) {
-  .card { min-width: 210px; max-width: 250px; }
-  .thumb, .card img { height: 150px; }
+  .card {
+    min-width: 210px;
+    max-width: 250px;
+  }
+
+  .thumb {
+    height: 150px
+  }
 }
+
 @media (min-width: 480px) {
-  .card { min-width: 230px; max-width: 270px; }
-  .thumb, .card img { height: 160px; }
+  .card {
+    min-width: 230px;
+    max-width: 270px;
+  }
+
+  .thumb {
+    height: 160px
+  }
 }
+
 @media (min-width: 640px) {
-  .card { min-width: 250px; max-width: 300px; }
-  .thumb, .card img { height: 180px; }
+  .card {
+    min-width: 250px;
+    max-width: 300px;
+  }
+
+  .thumb {
+    height: 180px
+  }
 }
 </style>

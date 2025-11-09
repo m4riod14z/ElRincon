@@ -23,6 +23,33 @@ export async function getCurrentUserRole(): Promise<UserRole | null> {
     return data?.role as UserRole || null;
 }
 
+let cachedRole: UserRole | null | undefined;
+let rolePromise: Promise<UserRole | null> | null = null;
+
+export function clearCachedUserRole() {
+    cachedRole = undefined;
+}
+
+export async function getCachedUserRole(forceRefresh = false): Promise<UserRole | null> {
+    if (!forceRefresh && cachedRole !== undefined) return cachedRole;
+    if (!forceRefresh && rolePromise) return rolePromise;
+
+    rolePromise = getCurrentUserRole()
+        .then(role => {
+            cachedRole = role;
+            return role;
+        })
+        .catch(err => {
+            cachedRole = null;
+            throw err;
+        })
+        .finally(() => {
+            rolePromise = null;
+        });
+
+    return rolePromise;
+}
+
 export async function createOrUpdateProfile(payload: {
     id: string;
     first_name: string;
