@@ -21,7 +21,7 @@
       </ion-toolbar>
     </ion-header>
 
-    <ion-content class="ion-padding with-custom-tabs">
+    <ion-content class="ion-padding with-custom-tabs view-fade-up">
       <div v-if="error" class="err">{{ error }}</div>
 
       <div v-else class="menu-sections">

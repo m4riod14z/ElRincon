@@ -6,7 +6,7 @@
       </ion-toolbar>
     </ion-header>
 
-    <ion-content class="ion-padding">
+    <ion-content class="ion-padding view-fade-up">
       <div v-if="loading">Cargando pedidos...</div>
       <div v-else-if="error">{{ error }}</div>
       <div v-else>

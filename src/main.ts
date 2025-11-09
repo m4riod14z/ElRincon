@@ -1,4 +1,4 @@
-// src/main.ts
+﻿// src/main.ts
 import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
@@ -6,7 +6,7 @@ import { IonicVue } from '@ionic/vue'
 import { supabase } from '@/services/SupabaseClient'
 import { App as CapacitorApp } from '@capacitor/app'
 import { Capacitor } from '@capacitor/core'
-import { ensureProfileRow } from '@/controllers/ProfileController'
+import { ensureProfileRow, clearCachedUserRole } from '@/controllers/ProfileController'
 
 import '@ionic/vue/css/core.css'
 import '@ionic/vue/css/normalize.css'
@@ -23,24 +23,25 @@ import './theme/variables.css'
 
 const app = createApp(App).use(IonicVue).use(router)
 
-// Helper para no duplicar navegación
+// Helper para no duplicar navegaciÃ³n
 const go = (path: string) => {
   if (router.currentRoute.value.path !== path) router.replace(path)
 }
 
-// 🔑 Listener con “otp_pending” para ignorar el SIGNED_IN del signUp
+// ðŸ”‘ Listener con â€œotp_pendingâ€ para ignorar el SIGNED_IN del signUp
 supabase.auth.onAuthStateChange(async (event, session) => {
   const otpPending = localStorage.getItem('otp_pending') === '1'
 
   if (event === 'SIGNED_IN' && session) {
-    // Si estamos en flujo de registro con OTP pendiente, NO redirigir aún
+    // Si estamos en flujo de registro con OTP pendiente, NO redirigir aÃºn
     if (otpPending) return
-    // Si no hay OTP pendiente, lleva al menú
+    // Si no hay OTP pendiente, lleva al menÃº
     return go('/tabs/tab1')
   }
 
   if (event === 'SIGNED_OUT') {
-    // Si no hay sesión y alguien intenta ir a tabs, devuélvelo
+    clearCachedUserRole()
+    // Si no hay sesiÃ³n y alguien intenta ir a tabs, devuÃ©lvelo
     if (router.currentRoute.value.path.startsWith('/tabs')) {
       return go('/home')
     }
@@ -79,3 +80,4 @@ if (Capacitor.isNativePlatform()) {
     }
   })
 }
+
