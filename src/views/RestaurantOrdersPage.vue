@@ -2,6 +2,13 @@
   <ion-page>
     <ion-content class="ion-padding" fullscreen>
       <h2 class="title">Pedidos</h2>
+
+      <div v-if="alert.visible" :class="['orders-alert', alert.kind]">
+        <span class="icon" v-if="alert.kind === 'new'">🔔</span>
+        <span class="icon" v-else>✅</span>
+        <span class="text">{{ alert.message }}</span>
+      </div>
+
       <ion-item v-if="error" color="danger" lines="full">
         <ion-label>⚠️{{ error }}</ion-label>
       </ion-item>
@@ -34,7 +41,7 @@
         </div>
         <ion-list>
           <ion-item v-for="o in enPreparacion" :key="o.id" button detail @click="openDetail(o.id)">
-            <ion-label>
+          <ion-label>
               <h2>Pedido #{{ o.id }}</h2>
               <p>Cliente: {{ fullName(o) }}</p>
               <p>{{ o.address }}</p>
@@ -108,7 +115,7 @@ import {
   IonPage, IonContent, IonList, IonItem, IonLabel, IonButtons, IonButton,
   IonModal, IonHeader, IonToolbar, IonTitle, IonNote
 } from '@ionic/vue'
-import { ref, watch } from 'vue'
+import { ref, watch, onBeforeUnmount } from 'vue'
 import { fmtCOP } from '@/utils/money'
 import { useRestaurantOrders } from '@/controllers/useRestaurantOrders'
 import type { Order, OrderItemDetail, OrderDetail } from '@/models/orders'
@@ -125,6 +132,38 @@ const detail = ref<OrderDetail | null>(null)
 const nameCache = ref<Record<string, string>>({})
 const pendingNames = new Set<string>()
 
+// ----- RF-23: aviso de nuevos / entregados -----
+type AlertKind = 'new' | 'delivered' | null
+const alert = ref<{ visible: boolean; kind: AlertKind; message: string }>({
+  visible: false,
+  kind: null,
+  message: ''
+})
+let alertTimer: ReturnType<typeof setTimeout> | null = null
+const ordersInitialized = ref(false)
+
+function showAlert(kind: AlertKind, count: number) {
+  if (!kind || count <= 0) return
+  let message = ''
+  if (kind === 'new') {
+    message = count === 1 ? 'Nuevo pedido recibido' : `${count} pedidos nuevos recibidos`
+  } else {
+    message = count === 1 ? 'Un pedido fue marcado como entregado' : `${count} pedidos marcados como entregados`
+  }
+  alert.value = { visible: true, kind, message }
+  if (alertTimer) clearTimeout(alertTimer)
+  alertTimer = setTimeout(() => {
+    alert.value.visible = false
+    alert.value.kind = null
+    alert.value.message = ''
+  }, 4000)
+}
+
+onBeforeUnmount(() => {
+  if (alertTimer) clearTimeout(alertTimer)
+})
+
+// watcher original para nombres
 watch(orders, (list) => {
   if (!Array.isArray(list)) return
   const updates: Record<string, string> = {}
@@ -145,6 +184,38 @@ watch(orders, (list) => {
   }
   if (missing.length) fetchClientNames(missing)
 }, { immediate: true })
+
+// watcher adicional para detectar nuevos / entregados
+watch(orders, (list, oldList) => {
+  const next = Array.isArray(list) ? list as Order[] : []
+  const prev = Array.isArray(oldList) ? oldList as Order[] : []
+
+  if (!ordersInitialized.value) {
+    ordersInitialized.value = true
+    return
+  }
+
+  const prevMap = new Map<number, Order>()
+  prev.forEach(o => prevMap.set(o.id, o))
+
+  let newCount = 0
+  let deliveredCount = 0
+
+  for (const o of next) {
+    const before = prevMap.get(o.id)
+    if (!before) {
+      if (o.status === 'NEW') newCount++
+    } else if (before.status !== 'DELIVERED' && o.status === 'DELIVERED') {
+      deliveredCount++
+    }
+  }
+
+  if (newCount > 0) {
+    showAlert('new', newCount)
+  } else if (deliveredCount > 0) {
+    showAlert('delivered', deliveredCount)
+  }
+}, { deep: false })
 
 async function fetchClientNames(ids: string[]) {
   try {
@@ -210,6 +281,31 @@ async function dispatch(orderId: number) {
 .title {
   font-weight: 800;
   margin-bottom: 10px;
+}
+
+/* Aviso RF-23 */
+.orders-alert {
+  margin-bottom: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.orders-alert.new {
+  background: rgba(59, 130, 246, 0.12);
+  color: var(--ion-color-primary);
+}
+
+.orders-alert.delivered {
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--ion-color-success, #16a34a);
+}
+
+.orders-alert .icon {
+  font-size: 16px;
 }
 
 .section {
