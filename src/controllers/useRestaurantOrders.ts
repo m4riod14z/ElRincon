@@ -55,7 +55,7 @@ async function unsubscribe() {
 // Computed lists
 const nuevos = computed(() => orders.value.filter(o => o.status === 'NEW').sort((a, b) => a.id - b.id)) // más recientes abajo
 const enPreparacion = computed(() => orders.value.filter(o => o.status === 'ACCEPTED'))
-const enviados = computed(() => orders.value.filter(o => ['READY_TO_SEND', 'DISPATCHED'].includes(o.status)))
+const enviados = computed(() => orders.value.filter(o => o.status === 'DISPATCHED'))
 
 // Detail fetcher
 async function getOrderDetail(orderId: number): Promise<OrderDetail | null> {
@@ -66,16 +66,9 @@ async function getOrderDetail(orderId: number): Promise<OrderDetail | null> {
 async function acceptOrder(orderId: number) {
   await optimisticUpdate(orderId, 'ACCEPTED')
 }
-async function readyToSend(orderId: number) {
-  await optimisticUpdate(orderId, 'READY_TO_SEND')
-}
 async function dispatchOrder(orderId: number) {
   await optimisticUpdate(orderId, 'DISPATCHED')
 }
-async function deliverOrder(orderId: number) {
-  await optimisticUpdate(orderId, 'DELIVERED')
-}
-
 async function optimisticUpdate(orderId: number, next: Order['status']) {
   const i = orders.value.findIndex(o => o.id === orderId)
   const prev = i >= 0 ? orders.value[i].status : null
@@ -97,6 +90,6 @@ export function useRestaurantOrders() {
     nuevos, enPreparacion, enviados,
     load, subscribe, unsubscribe,
     getOrderDetail,
-    acceptOrder, readyToSend, dispatchOrder, deliverOrder,
+    acceptOrder, dispatchOrder,
   }
 }

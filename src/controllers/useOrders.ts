@@ -75,7 +75,7 @@ async function initIfNeeded() {
 
 const solicitados = computed(() => orders.value.filter(o => o.status === 'NEW'))
 const enProgreso = computed(() =>
-    orders.value.filter(o => ['ACCEPTED', 'READY_TO_SEND', 'DISPATCHED'].includes(o.status))
+    orders.value.filter(o => ['ACCEPTED', 'DISPATCHED'].includes(o.status))
 )
 const enviados = computed(() => orders.value.filter(o => o.status === 'DISPATCHED'))
 const entregados = computed(() => orders.value.filter(o => o.status === 'DELIVERED'))

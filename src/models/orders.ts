@@ -5,7 +5,7 @@ export interface Order {
     client_id: string
     address: string
     total: number
-    status: 'NEW' | 'ACCEPTED' | 'READY_TO_SEND' | 'DISPATCHED' | 'DELIVERED'
+    status: 'NEW' | 'ACCEPTED' | 'DISPATCHED' | 'DELIVERED'
     first_name?: string | null
     last_name?: string | null
     created_at?: string | null

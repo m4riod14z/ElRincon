@@ -1,9 +1,9 @@
-<template>
+﻿<template>
   <ion-page>
     <ion-content class="ion-padding" fullscreen>
       <h2 class="title">Pedidos</h2>
       <ion-item v-if="error" color="danger" lines="full">
-        <ion-label>⚠️ {{ error }}</ion-label>
+        <ion-label>⚠️{{ error }}</ion-label>
       </ion-item>
 
       <!-- Nuevos -->
@@ -41,7 +41,6 @@
               <p>Total: <strong>{{ fmtCOP(o.total) }}</strong></p>
             </ion-label>
             <ion-buttons slot="end">
-              <ion-button color="medium" @click.stop="markReady(o.id)">Listo para enviar</ion-button>
               <ion-button color="primary" @click.stop="dispatch(o.id)">Enviar</ion-button>
             </ion-buttons>
           </ion-item>
@@ -60,13 +59,9 @@
               <h2>Pedido #{{ o.id }}</h2>
               <p>Cliente: {{ fullName(o) }}</p>
               <p>{{ o.address }}</p>
-              <p>Estado: {{ mapStatus(o.status) }}</p>
               <p>Total: <strong>{{ fmtCOP(o.total) }}</strong></p>
             </ion-label>
-            <ion-buttons slot="end">
-              <ion-button v-if="o.status === 'READY_TO_SEND'" color="primary" @click.stop="dispatch(o.id)">Marcar enviado</ion-button>
-              <ion-button v-else color="success" @click.stop="deliver(o.id)">Marcar entregado</ion-button>
-            </ion-buttons>
+            <ion-note slot="end" color="warning" class="sent-pill">{{ mapStatus(o.status) }}</ion-note>
           </ion-item>
           <p v-if="!enviados.length" class="empty">No hay pedidos enviados.</p>
         </ion-list>
@@ -111,33 +106,81 @@
 <script setup lang="ts">
 import {
   IonPage, IonContent, IonList, IonItem, IonLabel, IonButtons, IonButton,
-  IonModal, IonHeader, IonToolbar, IonTitle
+  IonModal, IonHeader, IonToolbar, IonTitle, IonNote
 } from '@ionic/vue'
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { fmtCOP } from '@/utils/money'
 import { useRestaurantOrders } from '@/controllers/useRestaurantOrders'
 import type { Order, OrderItemDetail, OrderDetail } from '@/models/orders'
+import { supabase } from '@/services/SupabaseClient'
 
 const {
-  nuevos, enPreparacion, enviados,
+  orders, nuevos, enPreparacion, enviados,
   getOrderDetail,
-  acceptOrder, readyToSend, dispatchOrder, deliverOrder,
+  acceptOrder, dispatchOrder,
   error,
 } = useRestaurantOrders()
 
 const detail = ref<OrderDetail | null>(null)
+const nameCache = ref<Record<string, string>>({})
+const pendingNames = new Set<string>()
+
+watch(orders, (list) => {
+  if (!Array.isArray(list)) return
+  const updates: Record<string, string> = {}
+  const missing: string[] = []
+  list.forEach((o) => {
+    const cid = o.client_id
+    if (!cid) return
+    const label = [o.first_name, o.last_name].filter(Boolean).join(' ').trim()
+    if (label) {
+      if (nameCache.value[cid] !== label) updates[cid] = label
+    } else if (!nameCache.value[cid] && !pendingNames.has(cid)) {
+      missing.push(cid)
+      pendingNames.add(cid)
+    }
+  })
+  if (Object.keys(updates).length) {
+    nameCache.value = { ...nameCache.value, ...updates }
+  }
+  if (missing.length) fetchClientNames(missing)
+}, { immediate: true })
+
+async function fetchClientNames(ids: string[]) {
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, first_name, last_name')
+      .in('id', ids)
+    if (error) throw error
+    const updates: Record<string, string> = {}
+    for (const row of (data ?? [])) {
+      const label = [row.first_name, row.last_name].filter(Boolean).join(' ').trim() || row.id
+      updates[row.id] = label
+    }
+    if (Object.keys(updates).length) {
+      nameCache.value = { ...nameCache.value, ...updates }
+    }
+  } catch (err) {
+    console.error('Error fetching client names', err)
+  } finally {
+    ids.forEach(id => pendingNames.delete(id))
+  }
+}
 
 function fullName(o: Partial<Order>) {
   const fn = (o.first_name || '').trim()
   const ln = (o.last_name || '').trim()
-  return [fn, ln].filter(Boolean).join(' ') || o.client_id
+  const label = [fn, ln].filter(Boolean).join(' ').trim()
+  if (label) return label
+  if (o.client_id) return nameCache.value[o.client_id] || o.client_id
+  return 'Cliente'
 }
 
 function mapStatus(st: Order['status']) {
   switch (st) {
     case 'NEW': return 'En espera'
     case 'ACCEPTED': return 'En preparación'
-    case 'READY_TO_SEND': return 'Listo para enviar'
     case 'DISPATCHED': return 'Enviado'
     case 'DELIVERED': return 'Entregado'
     default: return st
@@ -158,14 +201,8 @@ async function openDetail(orderId: number) {
 async function accept(orderId: number) {
   await acceptOrder(orderId)
 }
-async function markReady(orderId: number) {
-  await readyToSend(orderId)
-}
 async function dispatch(orderId: number) {
   await dispatchOrder(orderId)
-}
-async function deliver(orderId: number) {
-  await deliverOrder(orderId)
 }
 </script>
 
@@ -175,13 +212,55 @@ async function deliver(orderId: number) {
   margin-bottom: 10px;
 }
 
-.section { margin-bottom: 16px; }
-.section-header { display: flex; align-items: center; justify-content: space-between; }
-.empty { text-align: center; color: var(--ion-color-medium); margin: 8px 0; }
+.section {
+  margin-bottom: 16px;
+}
 
-h2 { font-weight: 700; margin: 0; }
-h3 { font-weight: 700; margin: 8px 0; }
-p { margin: 0; font-size: 14px; }
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
 
-.totals { margin-top: 12px; font-size: 16px; display: grid; gap: 6px; }
+.empty {
+  text-align: center;
+  color: var(--ion-color-medium);
+  margin: 8px 0;
+}
+
+h2 {
+  font-weight: 700;
+  margin: 0;
+}
+
+h3 {
+  font-weight: 700;
+  margin: 8px 0;
+}
+
+p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.sent-pill {
+  min-width: 70px;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  align-self: center;
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--ion-color-warning, #fbbf24);
+  color: var(--ion-color-warning, #fbbf24);
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.totals {
+  margin-top: 12px;
+  font-size: 16px;
+  display: grid;
+  gap: 6px;
+}
 </style>

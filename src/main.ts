@@ -23,7 +23,7 @@ import './theme/variables.css'
 
 const app = createApp(App).use(IonicVue).use(router)
 
-// Helper para no duplicar navegaciÃ³n
+// Helper para no duplicar navegación
 const go = (path: string) => {
   if (router.currentRoute.value.path !== path) router.replace(path)
 }
@@ -41,7 +41,7 @@ supabase.auth.onAuthStateChange(async (event, session) => {
 
   if (event === 'SIGNED_OUT') {
     clearCachedUserRole()
-    // Si no hay sesiÃ³n y alguien intenta ir a tabs, devuÃ©lvelo
+    // Si no hay sesión y alguien intenta ir a tabs, devuélvelo
     if (router.currentRoute.value.path.startsWith('/tabs')) {
       return go('/home')
     }
@@ -65,14 +65,18 @@ if (Capacitor.isNativePlatform()) {
             await supabase.auth.exchangeCodeForSession(code)
             exchanged = true
           }
-        } catch {}
+        } catch {
+          // Ignore malformed callback URLs
+        }
         // Fallback: some SDK versions accept the full callback URL string
         if (!exchanged) {
           await supabase.auth.exchangeCodeForSession(url)
         }
         // Crea perfil por defecto si no existe (rol 'client')
         await ensureProfileRow()
-        try { localStorage.removeItem('otp_pending') } catch {}
+        try { localStorage.removeItem('otp_pending') } catch {
+          // Ignore storage failures
+        }
         go('/tabs/tab1')
       } catch (err) {
         console.error('OAuth deep link error:', err)
