@@ -115,6 +115,7 @@ import { useRouter } from 'vue-router'
 import { useCart } from '@/controllers/useCart'
 import { validateAvailability } from '@/services/AvailabilityService'
 import { createOrder } from '@/services/OrderService'
+import { supabase } from '@/services/SupabaseClient'
 import * as L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
@@ -123,6 +124,33 @@ const fmtCOP = (n: number) =>
 
 const router = useRouter()
 const { items, total, clear } = useCart()
+
+async function prefillCustomerDetails() {
+  try {
+    const { data: ures, error: uerr } = await supabase.auth.getUser()
+    if (uerr || !ures?.user) return
+    const user = ures.user
+    const fallbackEmail = user.email ?? ''
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('first_name, last_name, email, phone')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    const first = profile?.first_name?.trim()
+    const last = profile?.last_name?.trim()
+    const emailCandidate = (profile?.email || fallbackEmail || '').trim()
+    const phoneCandidate = profile?.phone?.trim()
+
+    if (first && !firstName.value) firstName.value = first
+    if (last && !secondName.value) secondName.value = last
+    if (emailCandidate && !email.value) email.value = emailCandidate
+    if (phoneCandidate && !phone.value) phone.value = phoneCandidate
+  } catch {
+    // silently ignore if no profile/session available
+  }
+}
 
 // ===== formulario =====
 const firstName   = ref('')
@@ -174,6 +202,8 @@ let marker: L.Marker | null = null
 const lat = ref<number>(6.25184)
 const lng = ref<number>(-75.56359)
 const geoError = ref('')
+
+onMounted(prefillCustomerDetails)
 
 onMounted(() => {
   if (!mapEl.value) return
