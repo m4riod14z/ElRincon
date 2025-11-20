@@ -80,8 +80,7 @@ ion-content>ion-router-outlet {
 
 ion-title {
     width: 100%;
-    display: flex;
-    justify-content: center;
+    text-align: center;
 }
 
 ion-segment-button {
