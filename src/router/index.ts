@@ -19,10 +19,9 @@ const routes: Array<RouteRecordRaw> = [
 
   {
     path: '/restaurant',
-    name: 'restaurant',
     component: () => import('@/layouts/RestaurantLayout.vue'),
     children: [
-      { path: '', redirect: { name: 'restaurant-products' } },
+      { path: '', name: 'restaurant', redirect: { name: 'restaurant-products' } },
       { path: 'products', name: 'restaurant-products', component: () => import('@/views/RestaurantProductsPage.vue') },
       { path: 'orders',   name: 'restaurant-orders',   component: () => import('@/views/RestaurantOrdersPage.vue') },
       { path: 'profile',  name: 'restaurant-profile',  component: () => import('@/views/RestaurantProfilePage.vue') },

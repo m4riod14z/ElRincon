@@ -23,27 +23,22 @@ import './theme/variables.css'
 
 const app = createApp(App).use(IonicVue).use(router)
 
-// Helper para no duplicar navegaciÃ³n
 const go = (path: string) => {
   if (router.currentRoute.value.path !== path) router.replace(path)
 }
 
-// Ã°Å¸â€â€˜ Listener con Ã¢â‚¬Å“otp_pendingÃ¢â‚¬Â para ignorar el SIGNED_IN del signUp
 supabase.auth.onAuthStateChange(async (event, session) => {
   const otpPending = localStorage.getItem('otp_pending') === '1'
 
   if (event === 'SIGNED_IN' && session) {
-    // Si estamos en flujo de registro con OTP pendiente, NO redirigir aÃƒÂºn
     if (otpPending) return
     clearCachedUserRole()
     clearCachedUserRole()
-    // Si no hay OTP pendiente, lleva al menÃƒÂº
     return go('/tabs/tab1')
   }
 
   if (event === 'SIGNED_OUT') {
     clearCachedUserRole()
-    // Si no hay sesiÃ³n y alguien intenta ir a tabs, devuÃ©lvelo
     if (router.currentRoute.value.path.startsWith('/tabs')) {
       return go('/home')
     }

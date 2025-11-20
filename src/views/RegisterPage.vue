@@ -1,4 +1,4 @@
-<!-- src/views/RegisterPage.vue -->
+﻿<!-- src/views/RegisterPage.vue -->
 <template>
   <ion-page>
     <ion-header>
@@ -15,6 +15,7 @@
         <!-- Email -->
         <ion-item class="field">
           <ion-input
+            ref="emailInput"
             type="email"
             v-model="email"
             label="Email"
@@ -41,14 +42,26 @@
         </ion-item>
 
         <!-- Indicadores de seguridad -->
-        <ion-item lines="none" class="hints">
-          <ion-text :color="passLenOk ? 'success' : 'medium'">8+ caracteres</ion-text>
-          <ion-text :color="passUpOk  ? 'success' : 'medium'">Mayúscula</ion-text>
-          <ion-text :color="passLoOk  ? 'success' : 'medium'">Minúscula</ion-text>
-          <ion-text :color="passSpOk  ? 'success' : 'medium'">Especial</ion-text>
-        </ion-item>
+        <div class="hints" aria-label="Requisitos de contrasena">
+          <div>
+            <span class="bullet-dot" :class="{ ok: passLenOk }"></span>
+            <ion-text :color="passLenOk ? 'success' : 'medium'">8+ caracteres</ion-text>
+          </div>
+          <div>
+            <span class="bullet-dot" :class="{ ok: passUpOk }"></span>
+            <ion-text :color="passUpOk ? 'success' : 'medium'">Mayuscula</ion-text>
+          </div>
+          <div>
+            <span class="bullet-dot" :class="{ ok: passLoOk }"></span>
+            <ion-text :color="passLoOk ? 'success' : 'medium'">Minuscula</ion-text>
+          </div>
+          <div>
+            <span class="bullet-dot" :class="{ ok: passSpOk }"></span>
+            <ion-text :color="passSpOk ? 'success' : 'medium'">Caracter especial</ion-text>
+          </div>
+        </div>
 
-        <!-- Confirmar contraseña -->
+        <!-- Confirmar Contraseña -->
         <ion-item class="field">
           <ion-input
             :type="show2 ? 'text' : 'password'"
@@ -123,7 +136,7 @@
           </ion-button>
 
           <div class="resend">
-            <span>¿No recibiste el código?</span>
+            <span>Â¿No recibiste el código?</span>
             <button
               class="resend-link"
               :disabled="resendLeft > 0 || resending"
@@ -135,6 +148,30 @@
 
           <ion-text v-if="otpErr" color="danger" class="err">{{ otpErr }}</ion-text>
         </div>
+      </ion-content>
+    </ion-modal>
+
+    <!-- Modal Términos -->
+    <ion-modal :is-open="termsOpen" @did-dismiss="closeTerms">
+      <ion-header>
+        <ion-toolbar>
+          <ion-title>Términos y Condiciones</ion-title>
+          <ion-buttons slot="end">
+            <ion-button fill="clear" @click="closeTerms">Cerrar</ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+      <ion-content class="ion-padding">
+        <h3>El Rincón - Comidas rápidas</h3>
+        <p>Al registrarte aceptas:</p>
+        <ul class="terms-list">
+          <li>Usaremos tu correo para confirmar y actualizar tus pedidos.</li>
+          <li>Revisa tu pedido al recibirlo y repórtalo en 15 minutos si hay problemas.</li>
+          <li>Los tiempos de entrega pueden variar por clima, tráfico o alta demanda.</li>
+          <li>Guardamos tus datos solo para operar la app y mejorar el servicio.</li>
+          <li>No compartimos tu información con terceros ajenos a entrega y pago.</li>
+        </ul>
+        <ion-button expand="block" class="mt12" @click="closeTerms">Entendido</ion-button>
       </ion-content>
     </ion-modal>
   </ion-page>
@@ -161,6 +198,7 @@ const show1 = ref(false)
 const show2 = ref(false)
 const loading = ref(false)
 const err = ref('')
+const emailInput = ref()
 
 // Validaciones
 const emailOk = computed(() => /\S+@\S+\.\S+/.test(email.value.trim()))
@@ -188,8 +226,16 @@ const RESEND_WAIT = 60
 
 const codeBoxes = ref<string[]>(Array(OTP_LEN).fill(''))
 const otpRefs = ref<HTMLInputElement[]>([])
+const termsOpen = ref(false)
 
 function focusBox(i: number) { nextTick(() => otpRefs.value?.[i]?.focus()) }
+function focusEmail() {
+  nextTick(() => {
+    const el: any = emailInput.value
+    const setFocus = el?.setFocus ?? el?.$el?.setFocus
+    if (typeof setFocus === 'function') setFocus()
+  })
+}
 function onOtpInput(i: number) {
   const v = codeBoxes.value[i]
   if (!/^\d$/.test(v)) { codeBoxes.value[i] = ''; return }
@@ -206,7 +252,10 @@ function openOtp() {
   startResendTimer()
   focusBox(0)
 }
-function closeOtp() { otpOpen.value = false }
+function closeOtp() {
+  otpOpen.value = false
+  focusEmail()
+}
 
 // ========== Registro ==========
 async function onContinue() {
@@ -215,29 +264,24 @@ async function onContinue() {
   try {
     loading.value = true
 
-    // 🔹 Marca que estamos en flujo OTP (ignora SIGNED_IN del listener)
     localStorage.setItem('otp_pending', '1')
 
-    // 1️⃣ Crear usuario
     const { data, error: signErr } = await supabase.auth.signUp({
       email: email.value.trim(),
       password: password.value
     })
     if (signErr) throw signErr
 
-    // 2️⃣ Si signUp devuelve sesión activa → cerrarla para no redirigir antes del OTP
     if (data?.session) {
       await supabase.auth.signOut()
     }
 
-    // 3️⃣ Enviar OTP por correo
     const { error: otpSendErr } = await supabase.auth.signInWithOtp({
       email: email.value.trim(),
       options: { shouldCreateUser: false }
     })
     if (otpSendErr) throw otpSendErr
 
-    // 4️⃣ Abrir el modal para ingresar el código
     openOtp()
   } catch (e: any) {
     localStorage.removeItem('otp_pending')
@@ -264,7 +308,7 @@ async function verifyOtpClick() {
     })
     if (error) throw error
 
-    // OTP correcto → limpiar flag y redirigir
+    // OTP correcto â†’ limpiar flag y redirigir
     localStorage.removeItem('otp_pending')
     closeOtp()
     router.replace('/tabs/tab1')
@@ -311,14 +355,41 @@ function clearTimer() {
 }
 
 function openTerms() {
-  // TODO: abrir modal o redirigir a /terms
+  termsOpen.value = true
+}
+function closeTerms() {
+  termsOpen.value = false
 }
 </script>
 
 <style scoped>
 .form { display: grid; gap: 10px; }
 .field { --border-radius: 12px; --inner-padding-end: 8px; margin-bottom: 6px; border-radius: 12px; }
-.hints { display: grid; grid-auto-flow: column; justify-content: space-between; font-size: 12px; padding: 0 4px; }
+.hints {
+  display: grid;
+  gap: 6px;
+  padding: 6px 12px 0 16px;
+  margin: -2px 0 8px;
+  font-size: 13px;
+}
+.hints > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.hints ion-text {
+  font-weight: 600;
+}
+.bullet-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--ion-color-medium);
+  flex-shrink: 0;
+}
+.bullet-dot.ok {
+  background: var(--ion-color-success);
+}
 
 .terms-item { --inner-padding-end: 0; }
 .terms-item ion-checkbox { --size: 20px; }

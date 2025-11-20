@@ -605,7 +605,27 @@ function anadirAlCarrito() {
 .err { color: var(--ion-color-danger); margin-bottom: 8px; }
 
 @media (prefers-color-scheme: dark) {
-  .card { border-color: #000; }
+  .featured-card {
+    background: #1b1c1e;
+    border: 1px solid #222428;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55);
+  }
+  .featured-media {
+    background: #1b1c1e;
+    border: 1px solid #222428;
+  }
+  .featured-name {
+    color: #e5e7eb;
+  }
+  .featured-desc {
+    color: #cbd5e1;
+  }
+  .featured-progress {
+    color: #94a3b8;
+  }
+  .card {
+    border-color: #222428;
+    background: #1b1c1e;
+  }
 }
-body.dark .card { border-color: #000; }
 </style>

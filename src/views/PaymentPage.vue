@@ -18,12 +18,20 @@
         </ion-card-header>
 
         <ion-card-content>
-          <!-- ====== MINI MAPA ====== -->
+          <!-- ====== MINI MAPA (GOOGLE MAPS) ====== -->
           <div class="mapbox">
-            <div ref="mapEl" class="leaflet-map"></div>
+            <div id="payment-map" class="gmap"></div>
           </div>
-          <ion-button size="small" fill="outline" @click="useMyLocation">Usar mi ubicación</ion-button>
+
+          <ion-button size="small" fill="outline" @click="useMyLocation">
+            Usar mi ubicación
+          </ion-button>
           <ion-text v-if="geoError" color="danger" class="err">{{ geoError }}</ion-text>
+
+          <!-- Dirección calculada -->
+          <ion-text v-if="address" class="addr">
+            Dirección seleccionada: {{ address }}
+          </ion-text>
 
           <!-- ====== NOMBRES ====== -->
           <ion-item class="mt">
@@ -38,8 +46,14 @@
             <ion-input v-model="email" type="email" inputmode="email" label="Email" label-placement="floating" />
           </ion-item>
           <ion-item>
-            <ion-input v-model="phone" type="tel" inputmode="numeric" :maxlength="10"
-                       label="Teléfono (10 dígitos)" label-placement="floating" />
+            <ion-input
+              v-model="phone"
+              type="tel"
+              inputmode="numeric"
+              :maxlength="10"
+              label="Teléfono (10 dígitos)"
+              label-placement="floating"
+            />
           </ion-item>
 
           <!-- ====== MÉTODO: TARJETAS CON ICONO ====== -->
@@ -64,16 +78,31 @@
           <!-- ====== CAMPOS DE TARJETA (SOLO SI TARJETA) ====== -->
           <template v-if="method === 'card'">
             <ion-item class="mt">
-              <ion-input v-model="cardNumber" inputmode="numeric" :maxlength="16"
-                         label="Número de tarjeta (16)" label-placement="floating" />
+              <ion-input
+                v-model="cardNumber"
+                inputmode="numeric"
+                :maxlength="16"
+                label="Número de tarjeta (16)"
+                label-placement="floating"
+              />
             </ion-item>
             <ion-item>
-              <ion-input v-model="cardExp" placeholder="MM/YY" :maxlength="5"
-                         label="Expiración" label-placement="floating" />
+              <ion-input
+                v-model="cardExp"
+                placeholder="MM/YY"
+                :maxlength="5"
+                label="Expiración"
+                label-placement="floating"
+              />
             </ion-item>
             <ion-item>
-              <ion-input v-model="cardCvv" inputmode="numeric" :maxlength="3"
-                         label="CVV (3)" label-placement="floating" />
+              <ion-input
+                v-model="cardCvv"
+                inputmode="numeric"
+                :maxlength="3"
+                label="CVV (3)"
+                label-placement="floating"
+              />
             </ion-item>
           </template>
 
@@ -106,9 +135,24 @@
 
 <script setup lang="ts">
 import {
-  IonPage, IonHeader, IonToolbar, IonTitle, IonButtons, IonBackButton, IonContent,
-  IonCard, IonCardHeader, IonCardTitle, IonCardSubtitle, IonCardContent,
-  IonItem, IonInput, IonButton, IonText, IonSpinner, IonToast
+  IonPage,
+  IonHeader,
+  IonToolbar,
+  IonTitle,
+  IonButtons,
+  IonBackButton,
+  IonContent,
+  IonCard,
+  IonCardHeader,
+  IonCardTitle,
+  IonCardSubtitle,
+  IonCardContent,
+  IonItem,
+  IonInput,
+  IonButton,
+  IonText,
+  IonSpinner,
+  IonToast
 } from '@ionic/vue'
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
@@ -116,11 +160,13 @@ import { useCart } from '@/controllers/useCart'
 import { validateAvailability } from '@/services/AvailabilityService'
 import { createOrder } from '@/services/OrderService'
 import { supabase } from '@/services/SupabaseClient'
-import * as L from 'leaflet'
-import 'leaflet/dist/leaflet.css'
 
 const fmtCOP = (n: number) =>
-  (n ?? 0).toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 })
+  (n ?? 0).toLocaleString('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    maximumFractionDigits: 0
+  })
 
 const router = useRouter()
 const { items, total, clear } = useCart()
@@ -148,139 +194,230 @@ async function prefillCustomerDetails() {
     if (emailCandidate && !email.value) email.value = emailCandidate
     if (phoneCandidate && !phone.value) phone.value = phoneCandidate
   } catch {
-    // silently ignore if no profile/session available
+    // ignorar silenciosamente
   }
 }
 
 // ===== formulario =====
-const firstName   = ref('')
-const secondName  = ref('')
-const email       = ref('')
-const phone       = ref('')
-const method      = ref<'nequi'|'bancolombia'|'card'>('nequi')
+const firstName = ref('')
+const secondName = ref('')
+const email = ref('')
+const phone = ref('')
+const method = ref<'nequi' | 'bancolombia' | 'card'>('nequi')
 
-// imágenes (soportan svg o png)
-const iconNequi        = new URL('@/assets/images/nequi.png', import.meta.url).href
-const iconBancolombia  = new URL('@/assets/images/bancolombia.png', import.meta.url).href
-const iconCard         = new URL('@/assets/images/tarjeta.png', import.meta.url).href
+// imágenes
+const iconNequi = new URL('@/assets/images/nequi.png', import.meta.url).href
+const iconBancolombia = new URL('@/assets/images/bancolombia.png', import.meta.url).href
+const iconCard = new URL('@/assets/images/tarjeta.png', import.meta.url).href
 
 const methods = [
-  { value: 'nequi',       label: 'Nequi',       icon: iconNequi },
+  { value: 'nequi', label: 'Nequi', icon: iconNequi },
   { value: 'bancolombia', label: 'Bancolombia', icon: iconBancolombia },
-  { value: 'card',        label: 'Tarjeta',     icon: iconCard },
+  { value: 'card', label: 'Tarjeta', icon: iconCard }
 ] as const
 
-const methodLabel = computed(() => methods.find(m => m.value === method.value)?.label ?? '')
+const methodLabel = computed(
+  () => methods.find((m) => m.value === method.value)?.label ?? ''
+)
 
 // tarjeta
 const cardNumber = ref('')
-const cardExp    = ref('')
-const cardCvv    = ref('')
+const cardExp = ref('')
+const cardCvv = ref('')
 
-const paying    = ref(false)
-const err       = ref('')
+const paying = ref(false)
+const err = ref('')
 const toastOpen = ref(false)
 
 // ===== validaciones =====
 const emailOk = computed(() => /\S+@\S+\.\S+/.test(email.value.trim()))
 const phoneOk = computed(() => /^\d{10}$/.test(phone.value))
-const cardOk  = computed(() => {
+const cardOk = computed(() => {
   if (method.value !== 'card') return true
   const numOk = /^\d{16}$/.test(cardNumber.value)
   const expOk = /^(0[1-9]|1[0-2])\/\d{2}$/.test(cardExp.value)
   const cvvOk = /^\d{3}$/.test(cardCvv.value)
-  return numOk && expOk
-    && cvvOk
+  return numOk && expOk && cvvOk
 })
 
-// ===== Leaflet map =====
-const mapEl = ref<HTMLDivElement | null>(null)
-let map: L.Map | null = null
-let marker: L.Marker | null = null
+// ===== GOOGLE MAPS + GEOCODING =====
+
+// usa la misma key que en tu index.html (puedes ponerla igual aquí)
+// idealmente luego la sacas a una variable de entorno
+const GOOGLE_MAPS_KEY = 'AIzaSyBWRwXzKtTw1eu9TCzNR-ycy3yL-mZw9As'
+
+let gmap: any = null
+let gmarker: any = null
 
 // coords por defecto (Medellín)
 const lat = ref<number>(6.25184)
 const lng = ref<number>(-75.56359)
 const geoError = ref('')
 
-onMounted(prefillCustomerDetails)
+// dirección legible obtenida por Geocoding
+const address = ref('')
 
-onMounted(() => {
-  if (!mapEl.value) return
-  map = L.map(mapEl.value, { zoomControl: false }).setView([lat.value, lng.value], 14)
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map)
-  marker = L.marker([lat.value, lng.value]).addTo(map)
-  map.on('click', (e: L.LeafletMouseEvent) => {
-    lat.value = e.latlng.lat
-    lng.value = e.latlng.lng
-    marker?.setLatLng(e.latlng)
+async function updateAddressFromCoords() {
+  try {
+    const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat.value},${lng.value}&key=${GOOGLE_MAPS_KEY}&language=es`
+    const res = await fetch(url)
+    const data = await res.json()
+
+    if (data.status === 'OK' && data.results.length > 0) {
+      address.value = data.results[0].formatted_address
+    } else {
+      address.value = ''
+    }
+  } catch {
+    address.value = ''
+  }
+}
+
+function initMap() {
+  const win = window as any
+  if (!win.google || !win.google.maps) return
+
+  const el = document.getElementById('payment-map') as HTMLElement | null
+  if (!el) return
+
+  gmap = new win.google.maps.Map(el, {
+    center: { lat: lat.value, lng: lng.value },
+    zoom: 14,
+    disableDefaultUI: true
   })
-})
+
+  gmarker = new win.google.maps.Marker({
+    position: { lat: lat.value, lng: lng.value },
+    map: gmap,
+    draggable: true // 👈 se puede arrastrar
+  })
+
+  // click en el mapa mueve el marcador
+  gmap.addListener('click', (e: any) => {
+    if (!e?.latLng) return
+    lat.value = e.latLng.lat()
+    lng.value = e.latLng.lng()
+    gmarker?.setPosition(e.latLng)
+    updateAddressFromCoords()
+  })
+
+  // arrastrar el pin para afinar dirección
+  gmarker.addListener('dragend', (e: any) => {
+    if (!e?.latLng) return
+    lat.value = e.latLng.lat()
+    lng.value = e.latLng.lng()
+    updateAddressFromCoords()
+  })
+
+  // dirección inicial
+  updateAddressFromCoords()
+}
 
 async function useMyLocation() {
   try {
     geoError.value = ''
-    if (!('geolocation' in navigator)) throw new Error('La geolocalización no está disponible en este dispositivo.')
-    await new Promise<void>((resolve, reject) => {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          lat.value = pos.coords.latitude
-          lng.value = pos.coords.longitude
-          if (map && marker) {
-            map.setView([lat.value, lng.value], 15)
-            marker.setLatLng([lat.value, lng.value])
+    if (!('geolocation' in navigator)) {
+      throw new Error('La geolocalización no está disponible en este dispositivo.')
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        lat.value = pos.coords.latitude
+        lng.value = pos.coords.longitude
+
+        if (gmap) {
+          const position = { lat: lat.value, lng: lng.value }
+          gmap.setCenter(position)
+          gmap.setZoom(16)
+          if (gmarker) {
+            gmarker.setPosition(position)
+          } else {
+            const win = window as any
+            gmarker = new win.google.maps.Marker({
+              position,
+              map: gmap,
+              draggable: true
+            })
+            gmarker.addListener('dragend', (e: any) => {
+              if (!e?.latLng) return
+              lat.value = e.latLng.lat()
+              lng.value = e.latLng.lng()
+              updateAddressFromCoords()
+            })
           }
-          resolve()
-        },
-        (e) => reject(e),
-        { enableHighAccuracy: true, timeout: 10000 }
-      )
-    })
-  } catch (e:any) {
+        }
+
+        updateAddressFromCoords()
+      },
+      (e) => {
+        geoError.value = e?.message ?? 'No fue posible obtener tu ubicación.'
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+    )
+  } catch (e: any) {
     geoError.value = e?.message ?? 'No fue posible obtener tu ubicación.'
   }
 }
+
+// ===== lifecycle =====
+onMounted(prefillCustomerDetails)
+onMounted(() => {
+  initMap()
+})
 
 // ===== pagar =====
 async function pay() {
   try {
     err.value = ''
-    if (!firstName.value.trim())   throw new Error('Ingresa tu nombre.')
-    if (!secondName.value.trim())  throw new Error('Ingresa tu segundo nombre o apellido.')
-    if (!emailOk.value)            throw new Error('Email inválido.')
-    if (!phoneOk.value)            throw new Error('El teléfono debe tener 10 dígitos.')
-    if (!items.value.length)       throw new Error('Tu carrito está vacío.')
-    if (!cardOk.value)             throw new Error('Datos de tarjeta inválidos.')
+    if (!firstName.value.trim()) throw new Error('Ingresa tu nombre.')
+    if (!secondName.value.trim())
+      throw new Error('Ingresa tu segundo nombre o apellido.')
+    if (!emailOk.value) throw new Error('Email inválido.')
+    if (!phoneOk.value) throw new Error('El teléfono debe tener 10 dígitos.')
+    if (!items.value.length) throw new Error('Tu carrito está vacío.')
+    if (!cardOk.value) throw new Error('Datos de tarjeta inválidos.')
+
+    // si por alguna razón no hay dirección aún, intentamos generarla
+    if (!address.value) {
+      await updateAddressFromCoords()
+    }
 
     // revalidar disponibilidad
     const issues = await validateAvailability(items.value)
     if (issues.length) {
-      const msg = issues.map(i => {
-        const t = i.kind === 'product' ? 'Producto' : i.kind === 'addition' ? 'Adición' : 'Bebida'
-        return `• ${t}: ${i.name ?? i.id} no está disponible`
-      }).join('\n')
+      const msg = issues
+        .map((i) => {
+          const t =
+            i.kind === 'product'
+              ? 'Producto'
+              : i.kind === 'addition'
+                ? 'Adición'
+                : 'Bebida'
+          return `• ${t}: ${i.name ?? i.id} no está disponible`
+        })
+        .join('\n')
       throw new Error(msg)
     }
 
     paying.value = true
-    // simulación de cobro/redirect a pasarela
-    await new Promise(r => setTimeout(r, 1200))
+    await new Promise((r) => setTimeout(r, 1200))
 
     await createOrder({
-      firstName:  firstName.value.trim(),
-      lastName:   secondName.value.trim(),
-      address:    `${lat.value.toFixed(5)}, ${lng.value.toFixed(5)}`,
-      lat:        lat.value,
-      lng:        lng.value,
-      items:      items.value,
-      total:      total.value,
+      firstName: firstName.value.trim(),
+      lastName: secondName.value.trim(),
+      // 👇 AQUÍ SOLO VA LA DIRECCIÓN, SIN COORDENADAS
+      address: address.value || 'Dirección no disponible',
+      lat: lat.value,
+      lng: lng.value,
+      items: items.value,
+      total: total.value
       // paymentMethod: method.value,
     })
 
     toastOpen.value = true
     clear()
     router.replace('/tabs/tab2')
-  } catch (e:any) {
+  } catch (e: any) {
     err.value = e?.message ?? 'No fue posible procesar el pago.'
   } finally {
     paying.value = false
@@ -289,14 +426,45 @@ async function pay() {
 </script>
 
 <style scoped>
-.mapbox { width:100%; height:180px; border-radius:12px; overflow:hidden; margin-bottom:8px; }
-.leaflet-map { width:100%; height:100%; }
-.mt { margin-top: 10px; }
-.row { display:flex; justify-content:space-between; align-items:center; }
-.total { font-weight: 800; }
-.err { display:block; margin-top:8px; white-space:pre-line; }
+.mapbox {
+  width: 100%;
+  height: 180px;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 8px;
+  border: 1px solid var(--ion-color-step-250, #333);
+  background: var(--ion-color-step-100, #f0f0f0);
+}
 
-/* ====== Métodos de pago ====== */
+.gmap {
+  width: 100%;
+  height: 100%;
+}
+
+.addr {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.9rem;
+}
+
+/* ====== resto igual ====== */
+.mt {
+  margin-top: 10px;
+}
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.total {
+  font-weight: 800;
+}
+.err {
+  display: block;
+  margin-top: 8px;
+  white-space: pre-line;
+}
+
 .methods-title {
   font-weight: 700;
   margin-bottom: 8px;
@@ -315,20 +483,30 @@ async function pay() {
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  transition: border-color .15s, box-shadow .15s, transform .05s;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s,
+    transform 0.05s;
 }
 .method-card img {
-  width: 44px; height: 44px; object-fit: contain;
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
 }
 .method-card span {
-  font-weight: 600; font-size: 0.9rem;
+  font-weight: 600;
+  font-size: 0.9rem;
 }
-.method-card:active { transform: scale(0.98); }
+.method-card:active {
+  transform: scale(0.98);
+}
 .method-card.selected {
   border-color: var(--ion-color-primary);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--ion-color-primary) 20%, transparent);
 }
 @media (max-width: 390px) {
-  .methods-grid { grid-template-columns: repeat(2, 1fr); }
+  .methods-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 </style>
