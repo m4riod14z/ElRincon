@@ -420,4 +420,20 @@ async function removeDrink(d: OptionRow) {
     height: 180px
   }
 }
+
+@media (prefers-color-scheme: dark) {
+  .card {
+    background: #1b1c1e;
+    border-color: #222428;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55);
+  }
+
+  .title {
+    color: #e5e7eb;
+  }
+
+  .price {
+    color: #bfdbfe;
+  }
+}
 </style>
