@@ -1,5 +1,5 @@
 import { ref, computed, watch } from "vue";
-import type { CartItem, CartAddition, CartDrink, CartSnapshot } from "@/models/cart";
+import type { CartItem, CartAddition, CartDrink, CartSnapshot, CartExtraDrink, CartExtraAddition } from "@/models/cart";
 import { makeCartUID } from "@/models/cart";
 import { supabase } from "@/services/SupabaseClient";
 
@@ -9,6 +9,8 @@ let currentKey = STORAGE_PREFIX + "guest";
 
 const items = ref<CartItem[]>([]);
 const shipping = ref<number>(0);
+const extraDrinks = ref<CartExtraDrink[]>([]);
+const extraAdditions = ref<CartExtraAddition[]>([]);
 
 function loadFromStorage() {
     try {
@@ -17,9 +19,13 @@ function loadFromStorage() {
         const snap = JSON.parse(raw) as CartSnapshot;
         items.value = Array.isArray(snap.items) ? snap.items : [];
         shipping.value = Number(snap.shipping || 0);
+        extraDrinks.value = Array.isArray(snap.extraDrinks) ? snap.extraDrinks : [];
+        extraAdditions.value = Array.isArray(snap.extraAdditions) ? snap.extraAdditions : [];
     } catch {
         items.value = [];
         shipping.value = 0;
+        extraDrinks.value = [];
+        extraAdditions.value = [];
     }
 }
 
@@ -27,6 +33,8 @@ function saveToStorage() {
     const snap: CartSnapshot = {
         items: items.value,
         shipping: shipping.value,
+        extraDrinks: extraDrinks.value,
+        extraAdditions: extraAdditions.value,
     };
     try { localStorage.setItem(currentKey, JSON.stringify(snap)); } catch {}
 }
@@ -53,19 +61,23 @@ supabase.auth.onAuthStateChange((_event, session) => {
         loadFromStorage();
     }
 });
-watch([items, shipping], saveToStorage, { deep: true });
+watch([items, shipping, extraDrinks, extraAdditions], saveToStorage, { deep: true });
 
 const subtotalProducts = computed(() =>
     items.value.reduce((acc, it) => acc + it.basePrice * it.qty, 0)
 );
 
-const subtotalAdditions = computed(() =>
-    items.value.reduce((acc, it) => acc + (it.addition?.price ?? 0) * it.qty, 0)
-);
+const subtotalAdditions = computed(() => {
+    const cartAdds = items.value.reduce((acc, it) => acc + (it.addition?.price ?? 0) * it.qty, 0);
+    const extrasAdds = extraAdditions.value.reduce((acc, it) => acc + (it.price ?? 0) * it.qty, 0);
+    return cartAdds + extrasAdds;
+});
 
-const subtotalDrinks = computed(() =>
-    items.value.reduce((acc, it) => acc + (it.drink?.price ?? 0) * it.qty, 0)
-);
+const subtotalDrinks = computed(() => {
+    const cartDrinkTotal = items.value.reduce((acc, it) => acc + (it.drink?.price ?? 0) * it.qty, 0);
+    const extraDrinkTotal = extraDrinks.value.reduce((acc, it) => acc + (it.price ?? 0) * it.qty, 0);
+    return cartDrinkTotal + extraDrinkTotal;
+});
 
 const subtotal = computed(() =>
     subtotalProducts.value + subtotalAdditions.value + subtotalDrinks.value
@@ -124,10 +136,63 @@ function remove(uid: string) {
 
 function clear() {
     items.value = [];
+    extraDrinks.value = [];
+    extraAdditions.value = [];
 }
 
 function setShipping(value: number) {
     shipping.value = Math.max(0, Number(value) || 0);
+}
+
+function addExtraDrink(option: CartDrink, qty: number) {
+    const amount = Math.max(1, Number(qty) || 1);
+    const idx = extraDrinks.value.findIndex((d) => d.id === option.id);
+    if (idx >= 0) {
+        extraDrinks.value[idx].qty += amount;
+    } else {
+        extraDrinks.value.push({ ...option, qty: amount });
+    }
+}
+
+function updateExtraDrinkQty(id: number, qty: number) {
+    const idx = extraDrinks.value.findIndex((d) => d.id === id);
+    if (idx === -1) return;
+    const amount = Math.max(0, Number(qty) || 0);
+    if (amount <= 0) {
+        extraDrinks.value.splice(idx, 1);
+    } else {
+        extraDrinks.value[idx].qty = amount;
+    }
+}
+
+function removeExtraDrink(id: number) {
+    const idx = extraDrinks.value.findIndex((d) => d.id === id);
+    if (idx === -1) return;
+    extraDrinks.value.splice(idx, 1);
+}
+
+function addExtraAddition(option: CartAddition, qty: number) {
+    const amount = Math.max(1, Number(qty) || 1);
+    const idx = extraAdditions.value.findIndex((d) => d.id === option.id);
+    if (idx >= 0) {
+        extraAdditions.value[idx].qty += amount;
+    } else {
+        extraAdditions.value.push({ ...option, qty: amount });
+    }
+}
+
+function updateExtraAdditionQty(id: number, qty: number) {
+    const idx = extraAdditions.value.findIndex((d) => d.id === id);
+    if (idx === -1) return;
+    const amount = Math.max(0, Number(qty) || 0);
+    if (amount <= 0) extraAdditions.value.splice(idx, 1);
+    else extraAdditions.value[idx].qty = amount;
+}
+
+function removeExtraAddition(id: number) {
+    const idx = extraAdditions.value.findIndex((d) => d.id === id);
+    if (idx === -1) return;
+    extraAdditions.value.splice(idx, 1);
 }
 
 export function useCart() {
@@ -140,10 +205,19 @@ export function useCart() {
         subtotal,
         total,
         totalQty,
+        extraDrinks,
+        extraAdditions,
         addOrIncrease,
         decrease,
         remove,
         clear,
-        setShipping
+        setShipping,
+        addExtraDrink,
+        updateExtraDrinkQty,
+        removeExtraDrink,
+        addExtraAddition,
+        updateExtraAdditionQty,
+        removeExtraAddition
     };
 }
+

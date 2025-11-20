@@ -81,7 +81,6 @@ function toggleEmail() { showEmailOptions.value = !showEmailOptions.value }
 function onGoogle() { controller.continueWithGoogle() }
 function onLogin() { controller.goToLogin() }
 function onRegister() { controller.goToRegister() }
-
 /* Ícono Google SVG inline */
 const googleSvg = computed(() => `
 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 48 48" role="img">
@@ -106,7 +105,6 @@ const googleSvg = computed(() => `
   min-height: 100%;
   position: relative;
 }
-
 
 /* ===== Tarjeta central ===== */
 .wrap { width: min(520px, 92vw); margin: 24px auto; }

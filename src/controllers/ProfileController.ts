@@ -40,7 +40,7 @@ export async function getCachedUserRole(forceRefresh = false): Promise<UserRole 
             return role;
         })
         .catch(err => {
-            cachedRole = null;
+            cachedRole = undefined;
             throw err;
         })
         .finally(() => {
@@ -108,3 +108,4 @@ export async function ensureProfileRow() {
             }, { onConflict: 'id' })
     }
 }
+

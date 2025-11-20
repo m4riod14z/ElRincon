@@ -22,6 +22,27 @@
     </ion-header>
 
     <ion-content class="ion-padding with-custom-tabs view-fade-up">
+      <div v-if="currentFeatured" class="featured-container">
+        <div class="featured-card" @click="abrirDetalle(currentFeatured)">
+          <transition name="featured-fade" mode="out-in">
+            <div class="featured-slide" :key="currentFeaturedKey">
+              <div class="featured-media">
+                <img :src="currentFeatured.image_url || '/Logo.png'" :alt="currentFeatured.name || 'Producto destacado'" />
+              </div>
+              <div class="featured-info">
+                <p class="featured-label">Recomendado</p>
+                <h2 class="featured-name">{{ currentFeatured.name }}</h2>
+                <p class="featured-price">{{ fmtCOP(currentFeatured.price ?? 0) }}</p>
+                <p class="featured-desc">{{ currentFeatured.description || 'Pronto compartiremos mas detalles.' }}</p>
+                <div class="featured-progress">
+                  {{ currentFeaturedIndex + 1 }} / {{ featuredProducts.length }}
+                </div>
+              </div>
+            </div>
+          </transition>
+        </div>
+      </div>
+
       <div v-if="error" class="err">{{ error }}</div>
 
       <div v-else class="menu-sections">
@@ -130,7 +151,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonIcon,
   IonSearchbar, IonContent, IonModal, IonActionSheet, IonBadge
@@ -168,6 +189,77 @@ function onSearch(e: any) {
   // con v-model ya se actualiza, esto es por compatibilidad con ionInput
   searchQuery.value = e?.target?.value ?? searchQuery.value
 }
+
+/* Productos destacados hero */
+const FEATURED_PRODUCT_NAMES = [
+  'Carnivoria Personal',
+  'Salchiranchera',
+  'Nachos con carne',
+  'Salchibowl',
+  'Callejera'
+]
+const FEATURED_PRODUCT_KEYS = FEATURED_PRODUCT_NAMES.map(name => norm(name))
+
+const featuredProducts = computed(() => {
+  const all = (grupos.value ?? [])
+    .flatMap((g: any) => g.items ?? [])
+    .filter(Boolean)
+
+  if (!all.length) return []
+
+  const byNormalized = new Map<string, any>()
+  for (const product of all) {
+    const key = norm(product.name)
+    if (key && !byNormalized.has(key)) byNormalized.set(key, product)
+  }
+
+  const selected = FEATURED_PRODUCT_KEYS
+    .map(key => byNormalized.get(key))
+    .filter(Boolean)
+
+  if (!selected.length) return all.slice(0, 5)
+
+  const selectedIds = new Set(selected.map((prod: any) => prod.id))
+  const others = all.filter(prod => !selectedIds.has(prod.id))
+
+  return [...selected, ...others].slice(0, 5)
+})
+
+const currentFeaturedIndex = ref(0)
+const currentFeatured = computed(() => featuredProducts.value[currentFeaturedIndex.value] ?? null)
+const currentFeaturedKey = computed(() => currentFeatured.value?.id ?? `featured-${currentFeaturedIndex.value}`)
+
+const ROTATION_MS = 6000 // 6 s por tarjeta destacada
+let featuredInterval: number | null = null
+
+function stopFeaturedRotation() {
+  if (featuredInterval !== null) {
+    window.clearInterval(featuredInterval)
+    featuredInterval = null
+  }
+}
+
+function startFeaturedRotation() {
+  stopFeaturedRotation()
+  if (featuredProducts.value.length <= 1) return
+  featuredInterval = window.setInterval(() => {
+    const total = featuredProducts.value.length
+    if (!total) return
+    currentFeaturedIndex.value = (currentFeaturedIndex.value + 1) % total
+  }, ROTATION_MS)
+}
+
+watch(featuredProducts, (list) => {
+  if (!list.length) {
+    stopFeaturedRotation()
+    currentFeaturedIndex.value = 0
+    return
+  }
+  if (currentFeaturedIndex.value >= list.length) currentFeaturedIndex.value = 0
+  startFeaturedRotation()
+}, { immediate: true })
+
+onBeforeUnmount(stopFeaturedRotation)
 
 /**
  * Construye una copia de `grupos` aplicando filtro por nombre/descripcion.
@@ -248,6 +340,103 @@ function anadirAlCarrito() {
 <style scoped>
 .with-custom-tabs {
   --padding-bottom: calc(64px + var(--ion-safe-area-bottom));
+}
+
+.featured-container {
+  margin: 0 auto 16px;
+  width: min(480px, 100%);
+}
+
+.featured-card {
+  width: 100%;
+  min-height: 200px;
+  border-radius: 14px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.93);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.featured-slide {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+@media (min-width: 768px) {
+  .featured-slide {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.75fr);
+    align-items: center;
+    gap: 14px;
+  }
+}
+
+.featured-media {
+  width: 100%;
+  height: clamp(180px, 50vw, 260px);
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff3e0;
+  display: flex;
+  flex-shrink: 0;
+}
+
+.featured-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.featured-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.featured-label {
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 10px;
+  color: #a855f7;
+  margin: 0 0 4px;
+}
+
+.featured-name {
+  font-size: clamp(16px, 3vw, 22px);
+  margin: 0;
+  font-weight: 800;
+}
+
+.featured-price {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #ea580c;
+}
+
+.featured-desc {
+  margin: 0 0 6px;
+  color: #475569;
+  font-size: 12px;
+}
+
+.featured-progress {
+  margin-top: auto;
+  font-size: 13px;
+  color: #94a3b8;
+}
+
+.featured-fade-enter-active,
+.featured-fade-leave-active {
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.featured-fade-enter-from,
+.featured-fade-leave-to {
+  opacity: 0;
+  transform: translateY(12px);
 }
 
 .cart-badge {

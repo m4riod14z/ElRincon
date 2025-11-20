@@ -21,9 +21,19 @@ export interface CartItem {
     drink?: CartDrink | null;
 }
 
+export interface CartExtraDrink extends CartDrink {
+    qty: number;
+}
+
+export interface CartExtraAddition extends CartAddition {
+    qty: number;
+}
+
 export interface CartSnapshot {
     items: CartItem[];
     shipping: number;
+    extraDrinks?: CartExtraDrink[];
+    extraAdditions?: CartExtraAddition[];
 }
 
 export function makeCartUID(
@@ -33,3 +43,4 @@ export function makeCartUID(
 ): string {
     return `${productId}|${additionId ?? 0}|${drinkId ?? 0}`;
 }
+
