@@ -87,10 +87,11 @@ ion-segment-button {
     position: relative;
 }
 
+/* badge igual que antes pero un pelín más a la derecha */
 .tab-badge {
     position: absolute;
     top: 4px;
-    right: 10px;
+    right: 0px;
     min-width: 18px;
     height: 18px;
     padding: 0 5px;

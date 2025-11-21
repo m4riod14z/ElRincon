@@ -1,10 +1,10 @@
-<template>
+﻿<template>
   <ion-page>
     <ion-content class="ion-padding" fullscreen>
+      <!-- ========== PRODUCTOS ========== -->
       <section class="section">
         <div class="section-header">
           <h2>Productos</h2>
-          <ion-button size="small" @click="openProductForm()">Nuevo</ion-button>
         </div>
         <div class="carousel">
           <div class="slide" v-for="p in products" :key="p.id">
@@ -28,10 +28,10 @@
         </div>
       </section>
 
+      <!-- ========== ADICIONES ========== -->
       <section class="section">
         <div class="section-header">
           <h2>Adiciones</h2>
-          <ion-button size="small" @click="openOptionForm('addition')">Nueva</ion-button>
         </div>
         <div class="carousel">
           <div class="slide" v-for="a in additions" :key="a.id">
@@ -55,10 +55,10 @@
         </div>
       </section>
 
+      <!-- ========== BEBIDAS ========== -->
       <section class="section">
         <div class="section-header">
           <h2>Bebidas</h2>
-          <ion-button size="small" @click="openOptionForm('drink')">Nueva</ion-button>
         </div>
         <div class="carousel">
           <div class="slide" v-for="d in drinks" :key="d.id">
@@ -82,11 +82,11 @@
         </div>
       </section>
 
-      <!-- Modal productos -->
+      <!-- ========== MODAL PRODUCTO ========== -->
       <ion-modal :is-open="showProductModal" @didDismiss="closeProductForm">
         <ion-header>
           <ion-toolbar>
-            <ion-title>{{ productForm.id ? 'Editar' : 'Crear' }} producto</ion-title>
+            <ion-title>Editar producto</ion-title>
             <ion-buttons slot="end">
               <ion-button @click="closeProductForm">Cerrar</ion-button>
             </ion-buttons>
@@ -106,14 +106,16 @@
           <ion-text color="danger" v-if="errors.price">{{ errors.price }}</ion-text>
 
           <ion-item>
-            <ion-label position="stacked">Imagen (URL)</ion-label>
-            <ion-input v-model="productForm.image_url" />
-          </ion-item>
-          <ion-text color="danger" v-if="errors.image_url">{{ errors.image_url }}</ion-text>
-
-          <ion-item>
             <ion-label position="stacked">Categoría</ion-label>
-            <ion-input v-model="productForm.category" />
+            <ion-select v-model="productForm.category" interface="popover" placeholder="Selecciona una categoría">
+              <ion-select-option value="Personales">Personales</ion-select-option>
+              <ion-select-option value="Dobles">Dobles</ion-select-option>
+              <ion-select-option value="Para 3">Para 3</ion-select-option>
+              <ion-select-option value="Para 4">Para 4</ion-select-option>
+              <ion-select-option value="Para 7-8">Para 7-8</ion-select-option>
+              <ion-select-option value="Desgranados">Desgranados</ion-select-option>
+              <ion-select-option value="Nachos">Nachos</ion-select-option>
+            </ion-select>
           </ion-item>
 
           <ion-button expand="block" class="ion-margin-top" @click="saveProduct" :disabled="saving">
@@ -122,11 +124,11 @@
         </ion-content>
       </ion-modal>
 
-      <!-- Modal opciones -->
+      <!-- ========== MODAL OPCIONES (ADICIÓN / BEBIDA) ========== -->
       <ion-modal :is-open="showOptionModal" @didDismiss="closeOptionForm">
         <ion-header>
           <ion-toolbar>
-            <ion-title>{{ optionKindLabel }} {{ optionForm.id ? 'editar' : 'nueva' }}</ion-title>
+            <ion-title>Editar {{ optionKindLabel }}</ion-title>
             <ion-buttons slot="end">
               <ion-button @click="closeOptionForm">Cerrar</ion-button>
             </ion-buttons>
@@ -141,15 +143,9 @@
 
           <ion-item>
             <ion-label position="stacked">Precio</ion-label>
-              <ion-input type="number" v-model.number="optionForm.price" />
+            <ion-input type="number" v-model.number="optionForm.price" />
           </ion-item>
           <ion-text color="danger" v-if="errors.price">{{ errors.price }}</ion-text>
-
-          <ion-item>
-            <ion-label position="stacked">Imagen (URL)</ion-label>
-            <ion-input v-model="optionForm.image_url" />
-          </ion-item>
-          <ion-text color="danger" v-if="errors.image_url">{{ errors.image_url }}</ion-text>
 
           <ion-button expand="block" class="ion-margin-top" @click="saveOption" :disabled="saving">
             {{ saving ? 'Guardando…' : 'Guardar' }}
@@ -163,14 +159,42 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref, computed } from 'vue'
 import {
-  IonPage, IonContent, IonButton, IonToggle, IonModal,
-  IonItem, IonLabel, IonInput, IonText, IonHeader, IonToolbar, IonTitle, IonButtons
+  IonPage,
+  IonContent,
+  IonButton,
+  IonToggle,
+  IonModal,
+  IonItem,
+  IonLabel,
+  IonInput,
+  IonText,
+  IonHeader,
+  IonToolbar,
+  IonTitle,
+  IonButtons,
+  IonSelect,
+  IonSelectOption,
 } from '@ionic/vue'
 import { fmtCOP } from '@/utils/money'
 import type { Product, OptionRow } from '@/models/types'
-import { fetchAllProducts, upsertProduct, deleteProductById, setProductAvailability } from '@/models/products'
-import { fetchAllAdditions, upsertAddition, deleteAdditionById, setAdditionAvailability } from '@/models/additions'
-import { fetchAllDrinks, upsertDrink, deleteDrinkById, setDrinkAvailability } from '@/models/drinks'
+import {
+  fetchAllProducts,
+  deleteProductById,
+  setProductAvailability,
+  upsertProduct,
+} from '@/models/products'
+import {
+  fetchAllAdditions,
+  deleteAdditionById,
+  setAdditionAvailability,
+  upsertAddition,
+} from '@/models/additions'
+import {
+  fetchAllDrinks,
+  deleteDrinkById,
+  setDrinkAvailability,
+  upsertDrink,
+} from '@/models/drinks'
 
 const products = ref<Product[]>([])
 const additions = ref<OptionRow[]>([])
@@ -195,69 +219,101 @@ async function loadAll() {
 }
 onMounted(loadAll)
 
+/* ========== PRODUCTO ========== */
 const showProductModal = ref(false)
-const productForm = reactive<Partial<Product>>({ id: undefined, name: '', price: 0, image_url: '', category: '', available: true })
+const productForm = reactive<Partial<Product>>({
+  id: undefined,
+  name: '',
+  price: 0,
+  image_url: '',
+  category: '',
+  available: true,
+})
+
 function openProductForm(p?: Product) {
-  if (p) Object.assign(productForm, p)
-  else Object.assign(productForm, { id: undefined, name: '', price: 0, image_url: '', category: '', available: true })
+  if (p) {
+    Object.assign(productForm, p)
+  }
   showProductModal.value = true
 }
-function closeProductForm() { showProductModal.value = false }
+function closeProductForm() {
+  showProductModal.value = false
+}
 
 type OptionKind = 'addition' | 'drink'
 const optionKind = ref<OptionKind>('addition')
-const optionKindLabel = computed(() => optionKind.value === 'addition' ? 'Adición' : 'Bebida')
+const optionKindLabel = computed(() =>
+  optionKind.value === 'addition' ? 'Adición' : 'Bebida'
+)
+
 const showOptionModal = ref(false)
-const optionForm = reactive<Partial<OptionRow>>({ id: undefined, name: '', price: 0, available: true, image_url: '' })
+const optionForm = reactive<Partial<OptionRow>>({
+  id: undefined,
+  name: '',
+  price: 0,
+  available: true,
+  image_url: '',
+})
+
 function openOptionForm(kind: OptionKind, row?: OptionRow) {
   optionKind.value = kind
-  if (row) Object.assign(optionForm, row)
-  else Object.assign(optionForm, { id: undefined, name: '', price: 0, available: true, image_url: '' })
+  if (row) {
+    Object.assign(optionForm, row)
+  }
   showOptionModal.value = true
 }
-function closeOptionForm() { showOptionModal.value = false }
+function closeOptionForm() {
+  showOptionModal.value = false
+}
 
-const errors = reactive<{ name?: string; price?: string; image_url?: string }>({})
-function validateCommon(name: string, price: number) {
+const errors = reactive<{ name?: string; price?: string }>({})
+
+function validateCommon(name: string | undefined, price: number | undefined) {
   errors.name = ''
   errors.price = ''
-  if (!name || name.trim().length < 2 || name.trim().length > 80) errors.name = 'El nombre debe tener entre 2 y 80 caracteres'
-  if (typeof price !== 'number' || isNaN(price) || price <= 0) errors.price = 'El precio debe ser mayor que 0'
+
+  const trimmed = (name || '').trim()
+  if (!trimmed || trimmed.length < 2 || trimmed.length > 80) {
+    errors.name = 'El nombre debe tener entre 2 y 80 caracteres'
+  }
+
+  const nPrice = Number(price)
+  if (!Number.isFinite(nPrice) || nPrice <= 0) {
+    errors.price = 'El precio debe ser mayor que 0'
+  }
+
   return !errors.name && !errors.price
-}
-function validateImageUrl(url?: string | null) {
-  errors.image_url = ''
-  if (!url) return true
-  try {
-    const u = new URL(url)
-    if (!/^https?:$/.test(u.protocol)) throw new Error('bad')
-    return true
-  } catch { errors.image_url = 'La imagen debe ser una URL válida (http/https)'; return false }
 }
 
 async function saveProduct() {
-  const ok = validateCommon(productForm.name || '', Number(productForm.price)) && validateImageUrl(productForm.image_url as any)
+  const ok = validateCommon(productForm.name, productForm.price as number)
   if (!ok) return
+
   saving.value = true
   try {
     const saved = await upsertProduct({
       id: productForm.id as number | undefined,
       name: (productForm.name || '').trim(),
       price: Number(productForm.price),
-      image_url: (productForm.image_url || '') as string,
+      image_url: (productForm.image_url || '') as string | null,
       category: (productForm.category || '') as string,
       available: productForm.available ?? true,
     })
+
     const idx = products.value.findIndex(p => p.id === saved.id)
     if (idx >= 0) products.value.splice(idx, 1, saved)
     else products.value.unshift(saved)
+
     closeProductForm()
-  } finally { saving.value = false }
+  } finally {
+    saving.value = false
+  }
 }
 
 async function saveOption() {
-  const ok = validateCommon(optionForm.name || '', Number(optionForm.price)) && validateImageUrl(optionForm.image_url as any)
+  const ok = validateCommon(optionForm.name, optionForm.price as number)
   if (!ok) return
+
   saving.value = true
   try {
     if (optionKind.value === 'addition') {
@@ -266,7 +322,7 @@ async function saveOption() {
         name: (optionForm.name || '').trim(),
         price: Number(optionForm.price),
         available: optionForm.available ?? true,
-        image_url: (optionForm.image_url || null) as string | null
+        image_url: (optionForm.image_url || '') as string | null,
       })
       const idx = additions.value.findIndex(a => a.id === saved.id)
       if (idx >= 0) additions.value.splice(idx, 1, saved)
@@ -277,16 +333,19 @@ async function saveOption() {
         name: (optionForm.name || '').trim(),
         price: Number(optionForm.price),
         available: optionForm.available ?? true,
-        image_url: (optionForm.image_url || null) as string | null
+        image_url: (optionForm.image_url || '') as string | null,
       })
       const idx = drinks.value.findIndex(d => d.id === saved.id)
       if (idx >= 0) drinks.value.splice(idx, 1, saved)
       else drinks.value.unshift(saved)
     }
     closeOptionForm()
-  } finally { saving.value = false }
+  } finally {
+    saving.value = false
+  }
 }
 
+/* ========== TOGGLES & DELETE ========== */
 async function toggleProduct(p: Product) {
   const next = !p.available
   await setProductAvailability(p.id, next)
@@ -344,7 +403,7 @@ async function removeDrink(d: OptionRow) {
   background: #fff;
   border-radius: 12px;
   padding: 12px;
-  box-shadow: 0 1px 6px rgba(0, 0, 0, .08);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08);
   min-width: 200px;
   max-width: 240px;
   border: 1px solid #f1f5f9;
@@ -403,7 +462,7 @@ async function removeDrink(d: OptionRow) {
   }
 
   .thumb {
-    height: 150px
+    height: 150px;
   }
 }
 
@@ -414,7 +473,7 @@ async function removeDrink(d: OptionRow) {
   }
 
   .thumb {
-    height: 160px
+    height: 160px;
   }
 }
 
@@ -425,7 +484,7 @@ async function removeDrink(d: OptionRow) {
   }
 
   .thumb {
-    height: 180px
+    height: 180px;
   }
 }
 
