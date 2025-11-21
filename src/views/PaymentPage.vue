@@ -404,7 +404,8 @@ async function pay() {
 
     toastOpen.value = true
     clear()
-    router.replace('/tabs/tab2')
+    // After successful payment, return user to main tab (tab1)
+    router.replace('/tabs/tab1')
   } catch (e: any) {
     err.value = e?.message ?? 'No fue posible procesar el pago.'
   } finally {
