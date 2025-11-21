@@ -13,25 +13,71 @@
       <div v-if="!items.length" class="empty">Tu carrito está vacío.</div>
 
       <ion-list v-else class="cart-list">
-        <ion-item v-for="it in items" :key="it.uid" lines="full">
-          <ion-thumbnail slot="start" v-if="it.image_url">
-            <img :src="it.image_url" alt="" />
-          </ion-thumbnail>
-          <ion-label>
-            <h3>{{ it.name }}</h3>
-            <p v-if="it.addition">Adición: {{ it.addition.name }} ({{ fmtCOP(it.addition.price) }})</p>
-            <p v-if="it.drink">Bebida: {{ it.drink.name }} ({{ fmtCOP(it.drink.price) }})</p>
-            <p class="price">{{ fmtCOP(it.basePrice) }} · x{{ it.qty }}</p>
-          </ion-label>
-          <ion-buttons slot="end">
-            <ion-button size="small" fill="outline" @click="decrease(it.uid)">-</ion-button>
-            <ion-button size="small" fill="outline" @click="increase(it)">+</ion-button>
-            <ion-button size="small" color="danger" @click="remove(it.uid)">Quitar</ion-button>
-          </ion-buttons>
+        <ion-item v-for="it in items" :key="it.uid" lines="none" class="cart-item">
+          <div class="cart-item-inner">
+            <!-- IZQUIERDA: imagen -->
+            <div class="thumb-wrapper" v-if="it.image_url">
+              <img :src="it.image_url" alt="" />
+            </div>
+
+            <!-- CENTRO: textos + controles -->
+            <div class="cart-main">
+              <div class="cart-header-row">
+                <h3 class="product-name">{{ it.name }}</h3>
+
+                <div class="qty-controls">
+                  <ion-button size="small" fill="outline" class="qty-btn" @click="decrease(it.uid)">
+                    −
+                  </ion-button>
+
+                  <span class="qty-pill">x{{ it.qty }}</span>
+
+                  <ion-button size="small" fill="outline" class="qty-btn" @click="increase(it)" :disabled="it.qty >= 5">
+                    +
+                  </ion-button>
+                </div>
+              </div>
+
+              <p class="line">
+                <span class="line-label">Adición:</span>
+                <span class="line-value">
+                  <template v-if="it.addition">
+                    {{ it.addition.name }} · x{{ it.qty }}
+                    ({{ fmtCOP(it.addition.price * it.qty) }})
+                  </template>
+                  <template v-else>
+                    Ninguna
+                  </template>
+                </span>
+              </p>
+
+              <p class="line">
+                <span class="line-label">Bebida:</span>
+                <span class="line-value">
+                  <template v-if="it.drink">
+                    {{ it.drink.name }} · x{{ it.qty }}
+                    ({{ fmtCOP(it.drink.price * it.qty) }})
+                  </template>
+                  <template v-else>
+                    Ninguna
+                  </template>
+                </span>
+              </p>
+
+              <p class="line line-total">
+                <span>Producto · x{{ it.qty }}</span>
+                <span>{{ fmtCOP(it.basePrice * it.qty) }}</span>
+              </p>
+
+              <button class="remove-link" type="button" @click="remove(it.uid)">
+                Quitar
+              </button>
+            </div>
+          </div>
         </ion-item>
       </ion-list>
 
-      <div v-if="items.length" class="spacer"></div>
+      <div v-if="items.length" class="spacer" />
 
       <!-- Totales -->
       <div v-if="items.length" class="totals">
@@ -43,67 +89,6 @@
           <span>Adiciones</span>
           <strong>{{ fmtCOP(subtotalAdditions) }}</strong>
         </div>
-        <div class="extra-additions-block">
-          <div class="extra-additions-header">
-            <div>
-              <strong>¿Quieres agregar más adiciones?</strong>
-              <p class="extra-label">Selecciona aderezos o toppings extra.</p>
-            </div>
-            <ion-button size="small" fill="outline" @click="extraAdditionFormOpen = !extraAdditionFormOpen">
-              {{ extraAdditionFormOpen ? 'Cerrar' : 'Agregar adiciones' }}
-            </ion-button>
-          </div>
-          <div v-if="extraAdditionFormOpen" class="extra-additions-form">
-            <ion-select
-              class="extra-additions-select"
-              :disabled="additionsLoading"
-              placeholder="Selecciona una adición"
-              :interface="selectInterface"
-              :interface-options="selectInterface === 'popover' ? selectPopoverOpts : undefined"
-              ok-text="Aceptar"
-              cancel-text="Cancelar"
-              v-model="selectedAdditionId"
-            >
-              <ion-select-option value="none">Seleccionar</ion-select-option>
-              <ion-select-option
-                v-for="addition in availableAdditions"
-                :key="addition.id"
-                :value="String(addition.id)"
-              >
-                {{ addition.name }} ({{ fmtCOP(addition.price) }})
-              </ion-select-option>
-            </ion-select>
-            <div class="addition-qty-field">
-              <label>Cantidad</label>
-              <ion-input
-                class="addition-qty-input"
-                type="number"
-                inputmode="numeric"
-                min="1"
-                :value="selectedAdditionQty"
-                @ionInput="selectedAdditionQty = Number($event?.target?.value ?? $event?.detail?.value ?? 1)"
-              />
-            </div>
-            <ion-button size="small" @click="submitExtraAddition" :disabled="selectedAdditionId === 'none'">
-              Agregar
-            </ion-button>
-          </div>
-          <div v-if="extraAdditions.length" class="extra-additions-list">
-            <div v-for="addition in extraAdditions" :key="addition.id" class="extra-addition-item">
-              <div class="extra-addition-info">
-                <span class="extra-addition-name">{{ addition.name }}</span>
-                <small>{{ fmtCOP(addition.price) }} cada uno</small>
-              </div>
-              <div class="extra-addition-qty">
-                <span class="qty-label">Cantidad</span>
-                <ion-button size="small" fill="clear" @click="changeExtraAdditionQty(addition.id, addition.qty - 1)">-</ion-button>
-                <span class="qty-value">{{ addition.qty }}</span>
-                <ion-button size="small" fill="clear" @click="changeExtraAdditionQty(addition.id, addition.qty + 1)">+</ion-button>
-              </div>
-              <ion-button size="small" color="danger" fill="clear" @click="removeExtraAdditionItem(addition.id)">Quitar</ion-button>
-            </div>
-          </div>
-        </div>
         <div class="row">
           <span>Bebidas</span>
           <strong>{{ fmtCOP(subtotalDrinks) }}</strong>
@@ -112,67 +97,6 @@
           <span>Costo de envío</span>
           <ion-input type="number" inputmode="numeric" class="ship" :value="shipping" @ionInput="onShip($event)"
             placeholder="0" />
-        </div>
-        <div class="extra-drinks-block">
-          <div class="extra-drinks-header">
-            <div>
-              <strong>¿Quieres agregar más bebidas?</strong>
-              <p class="extra-label">Elige un tipo y cantidad para sumar al pedido.</p>
-            </div>
-            <ion-button size="small" fill="outline" @click="extraDrinkFormOpen = !extraDrinkFormOpen">
-              {{ extraDrinkFormOpen ? 'Cerrar' : 'Agregar bebidas' }}
-            </ion-button>
-          </div>
-          <div v-if="extraDrinkFormOpen" class="extra-drinks-form">
-            <ion-select
-              class="extra-drinks-select"
-              :disabled="drinksLoading"
-              placeholder="Selecciona una bebida"
-              :interface="selectInterface"
-              :interface-options="selectInterface === 'popover' ? selectPopoverOpts : undefined"
-              ok-text="Aceptar"
-              cancel-text="Cancelar"
-              v-model="selectedDrinkId"
-            >
-              <ion-select-option value="none">Seleccionar</ion-select-option>
-              <ion-select-option
-                v-for="drink in availableDrinks"
-                :key="drink.id"
-                :value="String(drink.id)"
-              >
-                {{ drink.name }} ({{ fmtCOP(drink.price) }})
-              </ion-select-option>
-            </ion-select>
-            <div class="drink-qty-field">
-              <label>Cantidad</label>
-              <ion-input
-                class="drink-qty-input"
-                type="number"
-                inputmode="numeric"
-                min="1"
-                :value="selectedDrinkQty"
-                @ionInput="selectedDrinkQty = Number($event?.target?.value ?? $event?.detail?.value ?? 1)"
-              />
-            </div>
-            <ion-button size="small" @click="submitExtraDrink" :disabled="selectedDrinkId === 'none'">
-              Agregar
-            </ion-button>
-          </div>
-          <div v-if="extraDrinks.length" class="extra-drinks-list">
-            <div v-for="drink in extraDrinks" :key="drink.id" class="extra-drink-item">
-              <div class="extra-drink-info">
-                <span class="extra-drink-name">{{ drink.name }}</span>
-                <small>{{ fmtCOP(drink.price) }} cada uno</small>
-              </div>
-              <div class="extra-drink-qty">
-                <span class="qty-label">Cantidad</span>
-                <ion-button size="small" fill="clear" @click="changeExtraDrinkQty(drink.id, drink.qty - 1)">-</ion-button>
-                <span class="qty-value">{{ drink.qty }}</span>
-                <ion-button size="small" fill="clear" @click="changeExtraDrinkQty(drink.id, drink.qty + 1)">+</ion-button>
-              </div>
-              <ion-button size="small" color="danger" fill="clear" @click="removeExtra(drink.id)">Quitar</ion-button>
-            </div>
-          </div>
         </div>
         <div class="row total">
           <span>Total a pagar</span>
@@ -195,7 +119,9 @@
     <ion-footer v-if="items.length">
       <ion-toolbar>
         <ion-buttons slot="start">
-          <ion-button color="medium" fill="outline" @click="clear">Vaciar carrito</ion-button>
+          <ion-button color="medium" fill="outline" @click="clear">
+            Vaciar carrito
+          </ion-button>
         </ion-buttons>
         <ion-buttons slot="end">
           <ion-button color="primary" :disabled="checking || hasIssues || !items.length" @click="confirmarPedido">
@@ -213,48 +139,57 @@
 
 <script setup lang="ts">
 import {
-  IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonList, IonButtons, IonButton,
-  IonFooter, IonInput, IonBackButton, IonCard, IonCardContent, IonAlert, IonSpinner,
-  IonItem, IonLabel, IonThumbnail, IonSelect, IonSelectOption, isPlatform
+  IonPage,
+  IonHeader,
+  IonToolbar,
+  IonTitle,
+  IonContent,
+  IonList,
+  IonButtons,
+  IonButton,
+  IonFooter,
+  IonInput,
+  IonBackButton,
+  IonCard,
+  IonCardContent,
+  IonAlert,
+  IonSpinner,
+  IonItem,
 } from '@ionic/vue'
 import { useCart } from '@/controllers/useCart'
 import { onMounted, ref, computed, watch } from 'vue'
-import { validateAvailability, type AvailabilityIssue } from '@/services/AvailabilityService'
+import {
+  validateAvailability,
+  type AvailabilityIssue,
+} from '@/services/AvailabilityService'
 import { useRouter } from 'vue-router'
-import { fetchDrinks } from '@/models/drinks'
-import { fetchAdditions } from '@/models/additions'
-import type { OptionRow } from '@/models/types'
 
 /* helper local: formato COP */
 const fmtCOP = (n: number) =>
-  (n ?? 0).toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 })
+  (n ?? 0).toLocaleString('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    maximumFractionDigits: 0,
+  })
 
 const router = useRouter()
 
 const {
-  items, shipping, subtotalProducts, subtotalAdditions, subtotalDrinks, total,
-  addOrIncrease, decrease, remove, clear, setShipping,
-  extraDrinks, extraAdditions,
-  addExtraDrink, updateExtraDrinkQty, removeExtraDrink,
-  addExtraAddition, updateExtraAdditionQty, removeExtraAddition
+  items,
+  shipping,
+  subtotalProducts,
+  subtotalAdditions,
+  subtotalDrinks,
+  total,
+  addOrIncrease,
+  decrease,
+  remove,
+  clear,
+  setShipping,
 } = useCart()
 
-const availableDrinks = ref<OptionRow[]>([])
-const extraDrinkFormOpen = ref(false)
-const selectedDrinkId = ref<string>('none')
-const selectedDrinkQty = ref<number>(1)
-const drinksLoading = ref(false)
-
-const availableAdditions = ref<OptionRow[]>([])
-const extraAdditionFormOpen = ref(false)
-const selectedAdditionId = ref<string>('none')
-const selectedAdditionQty = ref<number>(1)
-const additionsLoading = ref(false)
-const isMobile = isPlatform('hybrid') || isPlatform('ios') || isPlatform('android') || isPlatform('mobile')
-const selectInterface = isMobile ? 'alert' : 'popover'
-const selectPopoverOpts = { cssClass: 'wide-select-popover' }
-
 function increase(it: any) {
+  if (it.qty >= 5) return
   addOrIncrease({
     productId: it.productId,
     name: it.name,
@@ -262,78 +197,13 @@ function increase(it: any) {
     basePrice: it.basePrice,
     addition: it.addition,
     drink: it.drink,
-    qty: 1
+    qty: 1,
   })
 }
+
 function onShip(ev: any) {
   const v = Number(ev?.target?.value ?? ev?.detail?.value ?? 0)
   setShipping(v)
-}
-
-async function loadDrinkOptions() {
-  if (drinksLoading.value) return
-  drinksLoading.value = true
-  try {
-    availableDrinks.value = await fetchDrinks()
-  } catch (err) {
-    console.error('Error cargando bebidas', err)
-    availableDrinks.value = []
-  } finally {
-    drinksLoading.value = false
-  }
-}
-
-function submitExtraDrink() {
-  const id = selectedDrinkId.value === 'none' ? null : Number(selectedDrinkId.value)
-  const qty = Math.max(1, Number(selectedDrinkQty.value) || 1)
-  if (!id) return
-  const drink = availableDrinks.value.find(d => d.id === id)
-  if (!drink) return
-  addExtraDrink({ id: drink.id, name: drink.name, price: drink.price }, qty)
-  selectedDrinkQty.value = 1
-  selectedDrinkId.value = 'none'
-  extraDrinkFormOpen.value = false
-}
-
-function changeExtraDrinkQty(id: number, qty: number) {
-  updateExtraDrinkQty(id, qty)
-}
-
-function removeExtra(id: number) {
-  removeExtraDrink(id)
-}
-
-async function loadAdditionOptions() {
-  if (additionsLoading.value) return
-  additionsLoading.value = true
-  try {
-    availableAdditions.value = await fetchAdditions()
-  } catch (err) {
-    console.error('Error cargando adiciones', err)
-    availableAdditions.value = []
-  } finally {
-    additionsLoading.value = false
-  }
-}
-
-function submitExtraAddition() {
-  const id = selectedAdditionId.value === 'none' ? null : Number(selectedAdditionId.value)
-  const qty = Math.max(1, Number(selectedAdditionQty.value) || 1)
-  if (!id) return
-  const addition = availableAdditions.value.find(a => a.id === id)
-  if (!addition) return
-  addExtraAddition({ id: addition.id, name: addition.name, price: addition.price }, qty)
-  selectedAdditionQty.value = 1
-  selectedAdditionId.value = 'none'
-  extraAdditionFormOpen.value = false
-}
-
-function changeExtraAdditionQty(id: number, qty: number) {
-  updateExtraAdditionQty(id, qty)
-}
-
-function removeExtraAdditionItem(id: number) {
-  removeExtraAddition(id)
 }
 
 const checking = ref(false)
@@ -342,10 +212,17 @@ const alertOpen = ref(false)
 
 const hasIssues = computed(() => issues.value.length > 0)
 const issuesHtml = computed(() =>
-  issues.value.map(i => {
-    const k = i.kind === 'product' ? 'Producto' : i.kind === 'addition' ? 'Adición' : 'Bebida'
-    return `• ${k}: ${i.name ?? i.id} no está disponible`
-  }).join('<br/>')
+  issues.value
+    .map((i) => {
+      const k =
+        i.kind === 'product'
+          ? 'Producto'
+          : i.kind === 'addition'
+            ? 'Adición'
+            : 'Bebida'
+      return `• ${k}: ${i.name ?? i.id} no está disponible`
+    })
+    .join('<br/>'),
 )
 
 async function checkNow() {
@@ -361,24 +238,22 @@ async function checkNow() {
 function removeUnavailable() {
   for (let i = items.value.length - 1; i >= 0; i--) {
     const it = items.value[i]
-    const bad = issues.value.some(x =>
-      (x.kind === 'product' && x.id === it.productId) ||
-      (x.kind === 'addition' && x.id === it.addition?.id) ||
-      (x.kind === 'drink' && x.id === it.drink?.id)
+    const bad = issues.value.some(
+      (x) =>
+        (x.kind === 'product' && x.id === it.productId) ||
+        (x.kind === 'addition' && x.id === it.addition?.id) ||
+        (x.kind === 'drink' && x.id === it.drink?.id),
     )
-    if (bad) remove(it.uid)   // <- uid string
+    if (bad) remove(it.uid)
   }
   issues.value = []
 }
 
 onMounted(() => {
   checkNow()
-  loadDrinkOptions()
-  loadAdditionOptions()
 })
 watch(items, checkNow, { deep: true })
 
-/* Confirmar: si ok, vamos a /payment */
 async function confirmarPedido() {
   await checkNow()
   if (hasIssues.value) return
@@ -402,6 +277,134 @@ async function confirmarPedido() {
   margin: 0;
 }
 
+/* Card del item */
+.cart-item {
+  --background: var(--ion-item-background, #0b0b0b);
+  --inner-padding-start: 0;
+  --inner-padding-end: 0;
+  margin-bottom: 10px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.16);
+}
+
+.cart-item-inner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  width: 100%;
+}
+
+/* Imagen */
+.thumb-wrapper {
+  width: 68px;
+  height: 68px;
+  border-radius: 10px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: #111827;
+}
+
+.thumb-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Texto + controles */
+.cart-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.cart-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.product-name {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  word-break: break-word;
+}
+
+/* Controles de cantidad */
+.qty-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.qty-btn {
+  --padding-start: 6px;
+  --padding-end: 6px;
+  min-width: 32px;
+}
+
+.qty-pill {
+  min-width: 24px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+/* Líneas de detalle */
+.line {
+  margin: 0;
+  font-size: 13px;
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  color: var(--ion-color-medium);
+}
+
+.line-label {
+  white-space: nowrap;
+}
+
+.line-value {
+  text-align: right;
+  flex: 1 1 auto;
+}
+
+.line-total {
+  margin-top: 2px;
+  font-weight: 600;
+  color: var(--ion-text-color);
+}
+
+/* Quitar */
+.remove-link {
+  margin-top: 2px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--ion-color-danger, #ef4444);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+}
+
+/* Layout responsive: en pantallas muy pequeñas, apilar */
+@media (max-width: 360px) {
+  .cart-item-inner {
+    align-items: flex-start;
+  }
+
+  .cart-header-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+}
+
+/* General */
 .spacer {
   flex: 1 1 auto;
 }
@@ -412,6 +415,7 @@ async function confirmarPedido() {
   margin-top: 16px;
 }
 
+/* Totales */
 .totals {
   border-top: 1px solid #2c2c2c;
   padding-top: 12px;
@@ -437,128 +441,7 @@ async function confirmarPedido() {
   text-align: right;
 }
 
-.price {
-  margin: 4px 0 0;
-  font-weight: 600;
-}
-
-.extra-drinks-block,
-.extra-additions-block {
-  border: 1px dashed rgba(0, 0, 0, 0.15);
-  border-radius: 10px;
-  padding: 10px;
-  display: grid;
-  gap: 8px;
-}
-
-.extra-drinks-header,
-.extra-additions-header {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  align-items: center;
-  font-size: 0.9rem;
-}
-
-.extra-label {
-  margin: 0;
-  color: var(--ion-color-medium);
-  font-size: 0.8rem;
-}
-
-.extra-drinks-form,
-.extra-additions-form {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-}
-
-.extra-drinks-select,
-.extra-additions-select {
-  flex: 1 1 400px;
-  min-width: 320px;
-  width: 100%;
-  max-width: 640px;
-}
-
-.drink-qty-field,
-.addition-qty-field {
-  display: flex;
-  flex-direction: column;
-  min-width: 100px;
-}
-
-.drink-qty-field label,
-.addition-qty-field label {
-  font-size: 0.75rem;
-  color: var(--ion-color-medium);
-  margin-bottom: 2px;
-}
-
-.drink-qty-input,
-.addition-qty-input {
-  max-width: 120px;
-}
-
-.extra-drinks-list,
-.extra-additions-list {
-  display: grid;
-  gap: 6px;
-}
-
-.extra-drink-item,
-.extra-addition-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  font-size: 0.85rem;
-  border-top: 1px dotted rgba(0, 0, 0, 0.15);
-  padding-top: 6px;
-}
-
-.extra-drink-qty,
-.extra-addition-qty {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.extra-drink-info,
-.extra-addition-info {
-  flex: 1 1 auto;
-  display: flex;
-  flex-direction: column;
-}
-
-.extra-drink-name,
-.extra-addition-name {
-  font-weight: 600;
-}
-
-.qty-label {
-  font-size: 0.75rem;
-  color: var(--ion-color-medium);
-  margin-right: 4px;
-}
-
-.qty-value {
-  font-weight: 600;
-  min-width: 20px;
-  text-align: center;
-}
-
-:global(.wide-select-popover) {
-  --width: min(900px, 98vw);
-}
-
-:global(.wide-select-popover .popover-content),
-:global(.wide-select-popover .popover-content.sc-ion-popover-md),
-:global(.wide-select-popover .popover-content.sc-ion-popover-ios) {
-  width: min(900px, 98vw);
-}
-
+/* Aviso */
 .warn {
   border: 1px solid #fde7e7;
   background: #fff7f7;
@@ -574,7 +457,20 @@ async function confirmarPedido() {
   margin: 0 0 8px;
   padding-left: 16px;
 }
+
+/* Dark mode – bordes un poco más suaves */
+@media (prefers-color-scheme: dark) {
+  .cart-item {
+    --background: #262728;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.45);
+  }
+
+  .totals {
+    border-top-color: #3f3f46;
+  }
+
+  .row.total {
+    border-top-color: #3f3f46;
+  }
+}
 </style>
-
-
-

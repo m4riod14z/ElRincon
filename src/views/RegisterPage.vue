@@ -14,28 +14,14 @@
       <ion-list class="form">
         <!-- Email -->
         <ion-item class="field">
-          <ion-input
-            ref="emailInput"
-            type="email"
-            v-model="email"
-            label="Email"
-            label-placement="floating"
-            inputmode="email"
-            autocomplete="email"
-            required
-          />
+          <ion-input ref="emailInput" type="email" v-model="email" label="Email" label-placement="floating"
+            inputmode="email" autocomplete="email" required />
         </ion-item>
 
         <!-- Contraseña -->
         <ion-item class="field">
-          <ion-input
-            :type="show1 ? 'text' : 'password'"
-            v-model="password"
-            label="Contraseña"
-            label-placement="floating"
-            autocomplete="new-password"
-            required
-          />
+          <ion-input :type="show1 ? 'text' : 'password'" v-model="password" label="Contraseña"
+            label-placement="floating" autocomplete="new-password" required />
           <ion-button slot="end" fill="clear" size="small" @click="show1 = !show1">
             {{ show1 ? 'Ocultar' : 'Ver' }}
           </ion-button>
@@ -63,14 +49,8 @@
 
         <!-- Confirmar Contraseña -->
         <ion-item class="field">
-          <ion-input
-            :type="show2 ? 'text' : 'password'"
-            v-model="password2"
-            label="Confirmar Contraseña"
-            label-placement="floating"
-            autocomplete="new-password"
-            required
-          />
+          <ion-input :type="show2 ? 'text' : 'password'" v-model="password2" label="Confirmar Contraseña"
+            label-placement="floating" autocomplete="new-password" required />
           <ion-button slot="end" fill="clear" size="small" @click="show2 = !show2">
             {{ show2 ? 'Ocultar' : 'Ver' }}
           </ion-button>
@@ -78,12 +58,8 @@
 
         <!-- Términos -->
         <ion-item lines="none" class="terms-item">
-          <ion-checkbox
-            id="termsCb"
-            slot="start"
-            :checked="acceptTerms"
-            @ionChange="acceptTerms = $event.detail.checked"
-          />
+          <ion-checkbox id="termsCb" slot="start" :checked="acceptTerms"
+            @ionChange="acceptTerms = $event.detail.checked" />
           <ion-label for="termsCb" class="terms-label">
             Acepto los
             <a href="#" @click.prevent="openTerms">Términos y Condiciones</a>
@@ -92,14 +68,8 @@
       </ion-list>
 
       <!-- Botón de registro -->
-      <ion-button
-        expand="block"
-        size="large"
-        color="primary"
-        class="btn-primary"
-        :disabled="loading || !canContinue || otpOpen"
-        @click="onContinue"
-      >
+      <ion-button expand="block" size="large" color="primary" class="btn-primary"
+        :disabled="loading || !canContinue || otpOpen" @click="onContinue">
         <ion-spinner v-if="loading" name="dots" />
         <span v-else>Continuar</span>
       </ion-button>
@@ -115,18 +85,9 @@
         <p class="otp-subtitle">Introduce el código enviado a tu email.</p>
 
         <div class="otp-inputs">
-          <input
-            v-for="(_, i) in codeBoxes"
-            :key="i"
-            :ref="el => (otpRefs[i] = el as HTMLInputElement)"
-            inputmode="numeric"
-            pattern="[0-9]*"
-            maxlength="1"
-            class="otp-box"
-            v-model="codeBoxes[i]"
-            @input="onOtpInput(i)"
-            @keydown.backspace.prevent="onOtpBackspace(i)"
-          />
+          <input v-for="(_, i) in codeBoxes" :key="i" :ref="el => (otpRefs[i] = el as HTMLInputElement)"
+            inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-box" v-model="codeBoxes[i]"
+            @input="onOtpInput(i)" @keydown.backspace.prevent="onOtpBackspace(i)" />
         </div>
 
         <div class="otp-actions">
@@ -136,12 +97,8 @@
           </ion-button>
 
           <div class="resend">
-            <span>Â¿No recibiste el código?</span>
-            <button
-              class="resend-link"
-              :disabled="resendLeft > 0 || resending"
-              @click="resendOtpClick"
-            >
+            <span>¿No recibiste el código?</span>
+            <button class="resend-link" :disabled="resendLeft > 0 || resending" @click="resendOtpClick">
               {{ resendLeft > 0 ? `Reenviar (${resendLeft}s)` : (resending ? 'Enviando...' : 'Reenviar') }}
             </button>
           </div>
@@ -198,14 +155,14 @@ const show1 = ref(false)
 const show2 = ref(false)
 const loading = ref(false)
 const err = ref('')
-const emailInput = ref()
+const emailInput = ref<any>(null)
 
 // Validaciones
 const emailOk = computed(() => /\S+@\S+\.\S+/.test(email.value.trim()))
 const passLenOk = computed(() => password.value.length >= 8)
-const passUpOk  = computed(() => /[A-Z]/.test(password.value))
-const passLoOk  = computed(() => /[a-z]/.test(password.value))
-const passSpOk  = computed(() => /[^A-Za-z0-9]/.test(password.value))
+const passUpOk = computed(() => /[A-Z]/.test(password.value))
+const passLoOk = computed(() => /[a-z]/.test(password.value))
+const passSpOk = computed(() => /[^A-Za-z0-9]/.test(password.value))
 const passValid = computed(() => passLenOk.value && passUpOk.value && passLoOk.value && passSpOk.value)
 
 const canContinue = computed(() =>
@@ -228,21 +185,33 @@ const codeBoxes = ref<string[]>(Array(OTP_LEN).fill(''))
 const otpRefs = ref<HTMLInputElement[]>([])
 const termsOpen = ref(false)
 
-function focusBox(i: number) { nextTick(() => otpRefs.value?.[i]?.focus()) }
+function focusBox(i: number) {
+  nextTick(() => otpRefs.value?.[i]?.focus())
+}
+
+// 🔧 Fix: evitar error de nativeInput/setFocus
 function focusEmail() {
   nextTick(() => {
-    const el: any = emailInput.value
-    const setFocus = el?.setFocus ?? el?.$el?.setFocus
-    if (typeof setFocus === 'function') setFocus()
+    const ion = emailInput.value
+    const inputEl: HTMLInputElement | null =
+      ion?.$el?.querySelector('input') ?? null
+    inputEl?.focus()
   })
 }
+
 function onOtpInput(i: number) {
   const v = codeBoxes.value[i]
-  if (!/^\d$/.test(v)) { codeBoxes.value[i] = ''; return }
+  if (!/^\d$/.test(v)) {
+    codeBoxes.value[i] = ''
+    return
+  }
   if (i < OTP_LEN - 1) focusBox(i + 1)
 }
 function onOtpBackspace(i: number) {
-  if (codeBoxes.value[i]) { codeBoxes.value[i] = ''; return }
+  if (codeBoxes.value[i]) {
+    codeBoxes.value[i] = ''
+    return
+  }
   if (i > 0) focusBox(i - 1)
 }
 function openOtp() {
@@ -254,6 +223,7 @@ function openOtp() {
 }
 function closeOtp() {
   otpOpen.value = false
+  clearTimer()
   focusEmail()
 }
 
@@ -270,12 +240,22 @@ async function onContinue() {
       email: email.value.trim(),
       password: password.value
     })
-    if (signErr) throw signErr
 
+    // Manejo explícito del 422 (usuario ya registrado)
+    if (signErr) {
+      // Manejo explícito del error 422 (correo ya registrado)
+      if ((signErr as any).status === 422) {
+        throw new Error('Este correo ya está registrado. Usa otro correo o inicia sesión.');
+      }
+      throw signErr
+    }
+
+    // Si por alguna razón viene sesión, la cerramos para obligar a verificar por OTP
     if (data?.session) {
       await supabase.auth.signOut()
     }
 
+    // Enviar OTP de verificación al mismo correo
     const { error: otpSendErr } = await supabase.auth.signInWithOtp({
       email: email.value.trim(),
       options: { shouldCreateUser: false }
@@ -308,7 +288,6 @@ async function verifyOtpClick() {
     })
     if (error) throw error
 
-    // OTP correcto â†’ limpiar flag y redirigir
     localStorage.removeItem('otp_pending')
     closeOtp()
     router.replace('/tabs/tab1')
@@ -363,8 +342,18 @@ function closeTerms() {
 </script>
 
 <style scoped>
-.form { display: grid; gap: 10px; }
-.field { --border-radius: 12px; --inner-padding-end: 8px; margin-bottom: 6px; border-radius: 12px; }
+.form {
+  display: grid;
+  gap: 10px;
+}
+
+.field {
+  --border-radius: 12px;
+  --inner-padding-end: 8px;
+  margin-bottom: 6px;
+  border-radius: 12px;
+}
+
 .hints {
   display: grid;
   gap: 6px;
@@ -372,14 +361,17 @@ function closeTerms() {
   margin: -2px 0 8px;
   font-size: 13px;
 }
-.hints > div {
+
+.hints>div {
   display: flex;
   align-items: center;
   gap: 10px;
 }
+
 .hints ion-text {
   font-weight: 600;
 }
+
 .bullet-dot {
   width: 10px;
   height: 10px;
@@ -387,16 +379,34 @@ function closeTerms() {
   background: var(--ion-color-medium);
   flex-shrink: 0;
 }
+
 .bullet-dot.ok {
   background: var(--ion-color-success);
 }
 
-.terms-item { --inner-padding-end: 0; }
-.terms-item ion-checkbox { --size: 20px; }
-.terms-label a { color: var(--ion-color-primary); text-decoration: none; font-weight: 600; }
+.terms-item {
+  --inner-padding-end: 0;
+}
 
-.btn-primary { margin-top: 12px; --border-radius: 16px; }
-.err { display: block; margin-top: 10px; }
+.terms-item ion-checkbox {
+  --size: 20px;
+}
+
+.terms-label a {
+  color: var(--ion-color-primary);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.btn-primary {
+  margin-top: 12px;
+  --border-radius: 16px;
+}
+
+.err {
+  display: block;
+  margin-top: 10px;
+}
 
 /* OTP modal */
 .otp-modal {
@@ -408,12 +418,59 @@ function closeTerms() {
   gap: 16px;
   text-align: center;
 }
-.grabber { width: 48px; height: 5px; border-radius: 3px; background: #e5e7eb; margin: 6px auto 8px; }
-.otp-title { margin: 0; font-weight: 800; }
-.otp-subtitle { margin: 0; font-size: 14px; color: var(--ion-color-medium); }
-.otp-inputs { display: flex; justify-content: center; gap: 8px; margin: 16px 0; }
-.otp-box { width: 40px; height: 48px; border: 1px solid #e5e7eb; border-radius: 10px; text-align: center; font-size: 20px; background: white; color: black; }
-.otp-actions { display: grid; gap: 12px; }
-.resend { text-align: center; font-size: 14px; }
-.resend-link { background: none; border: none; padding: 0 0 0 6px; color: var(--ion-color-primary); cursor: pointer; }
+
+.grabber {
+  width: 48px;
+  height: 5px;
+  border-radius: 3px;
+  background: #e5e7eb;
+  margin: 6px auto 8px;
+}
+
+.otp-title {
+  margin: 0;
+  font-weight: 800;
+}
+
+.otp-subtitle {
+  margin: 0;
+  font-size: 14px;
+  color: var(--ion-color-medium);
+}
+
+.otp-inputs {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 16px 0;
+}
+
+.otp-box {
+  width: 40px;
+  height: 48px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  text-align: center;
+  font-size: 20px;
+  background: white;
+  color: black;
+}
+
+.otp-actions {
+  display: grid;
+  gap: 12px;
+}
+
+.resend {
+  text-align: center;
+  font-size: 14px;
+}
+
+.resend-link {
+  background: none;
+  border: none;
+  padding: 0 0 0 6px;
+  color: var(--ion-color-primary);
+  cursor: pointer;
+}
 </style>

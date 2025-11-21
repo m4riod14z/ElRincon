@@ -13,11 +13,7 @@
 
       <ion-toolbar>
         <!-- 🔎 ahora sí filtra -->
-        <ion-searchbar
-          placeholder="Buscar en El Rincón"
-          v-model="searchQuery"
-          @ionInput="onSearch"
-        />
+        <ion-searchbar placeholder="Buscar en El Rincón" v-model="searchQuery" @ionInput="onSearch" />
       </ion-toolbar>
     </ion-header>
 
@@ -27,7 +23,8 @@
           <transition name="featured-fade" mode="out-in">
             <div class="featured-slide" :key="currentFeaturedKey">
               <div class="featured-media">
-                <img :src="currentFeatured.image_url || '/Logo.png'" :alt="currentFeatured.name || 'Producto destacado'" />
+                <img :src="currentFeatured.image_url || '/Logo.png'"
+                  :alt="currentFeatured.name || 'Producto destacado'" />
               </div>
               <div class="featured-info">
                 <p class="featured-label">Recomendado</p>
@@ -47,21 +44,11 @@
 
       <div v-else class="menu-sections">
         <!-- 👇 usamos gruposFiltrados -->
-        <section
-          v-for="cat in gruposFiltrados"
-          :key="cat.nombre"
-          class="section"
-        >
+        <section v-for="cat in gruposFiltrados" :key="cat.nombre" class="section">
           <h2 class="section-title">{{ cat.nombre }}</h2>
 
           <div class="carousel">
-            <button
-              v-for="item in cat.items"
-              :key="item.id"
-              class="card"
-              type="button"
-              @click="abrirDetalle(item)"
-            >
+            <button v-for="item in cat.items" :key="item.id" class="card" type="button" @click="abrirDetalle(item)">
               <img :src="item.image_url || '/Logo.png'" :alt="item.name || 'Producto'" />
               <h3 class="card-title">{{ item.name }}</h3>
               <p class="precio">{{ fmtCOP(item.price) }}</p>
@@ -135,18 +122,10 @@
     </ion-modal>
 
     <!-- Action Sheets -->
-    <ion-action-sheet
-      :is-open="showAddSheet"
-      header="Selecciona una adición"
-      :buttons="additionActions"
-      @didDismiss="showAddSheet = false"
-    />
-    <ion-action-sheet
-      :is-open="showDrinkSheet"
-      header="Selecciona una bebida"
-      :buttons="drinkActions"
-      @didDismiss="showDrinkSheet = false"
-    />
+    <ion-action-sheet :is-open="showAddSheet" header="Selecciona una adición" :buttons="additionActions"
+      @didDismiss="showAddSheet = false" />
+    <ion-action-sheet :is-open="showDrinkSheet" header="Selecciona una bebida" :buttons="drinkActions"
+      @didDismiss="showDrinkSheet = false" />
   </ion-page>
 </template>
 
@@ -499,7 +478,6 @@ function anadirAlCarrito() {
   font-size: 14px;
   margin: 6px 0 2px;
   font-weight: 600;
-  /* Adapt text color to theme */
   color: var(--ion-text-color);
 }
 
@@ -512,7 +490,8 @@ function anadirAlCarrito() {
 
 /* ======= Detalle ======= */
 .detail-content {
-  --background: #fffffe;
+  /* que el fondo de la modal siga el tema */
+  --background: var(--ion-background-color, #fffffe);
 }
 
 .detail-wrap {
@@ -533,6 +512,7 @@ function anadirAlCarrito() {
   margin: 0;
   font-weight: 800;
   font-size: 22px;
+  color: var(--ion-text-color, #000);
 }
 
 .detail-desc {
@@ -555,7 +535,7 @@ function anadirAlCarrito() {
 }
 
 .base strong {
-  color: #000;
+  color: var(--ion-text-color, #000);
 }
 
 .row {
@@ -568,8 +548,14 @@ function anadirAlCarrito() {
   margin-left: 4px;
 }
 
-.label { white-space: nowrap; }
-.name { text-align: left; color: #000; }
+.label {
+  white-space: nowrap;
+}
+
+.name {
+  text-align: left;
+  color: var(--ion-text-color, #000);
+}
 
 .row strong {
   font-weight: 600;
@@ -579,7 +565,7 @@ function anadirAlCarrito() {
 .total-line {
   display: flex;
   justify-content: space-between;
-  border-top: 1px solid #eee;
+  border-top: 1px solid #e5e7eb;
   padding-top: 6px;
   margin-top: 4px;
 }
@@ -595,14 +581,17 @@ function anadirAlCarrito() {
   bottom: 0;
   left: 0;
   right: 0;
-  background: #fff;
+  background: var(--ion-item-background, #ffffff);
   padding: 12px 16px 16px;
   box-shadow: 0 -6px 10px rgba(0, 0, 0, .06);
   display: grid;
   gap: 8px;
 }
 
-.err { color: var(--ion-color-danger); margin-bottom: 8px; }
+.err {
+  color: var(--ion-color-danger);
+  margin-bottom: 8px;
+}
 
 @media (prefers-color-scheme: dark) {
   .featured-card {
@@ -610,22 +599,66 @@ function anadirAlCarrito() {
     border: 1px solid #222428;
     box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55);
   }
+
   .featured-media {
     background: #1b1c1e;
     border: 1px solid #222428;
   }
+
   .featured-name {
     color: #e5e7eb;
   }
+
   .featured-desc {
     color: #cbd5e1;
   }
+
   .featured-progress {
     color: #94a3b8;
   }
+
   .card {
     border-color: #222428;
     background: #1b1c1e;
+  }
+
+  /* Modal en oscuro */
+  .detail-content {
+    --background: #05060a;
+  }
+
+  .detail-title {
+    color: #e5e7eb;
+  }
+
+  .detail-desc {
+    color: #cbd5e1;
+  }
+
+  .base {
+    color: #9ca3af;
+  }
+
+  .base strong,
+  .name {
+    color: #f9fafb;
+  }
+
+  .row {
+    color: #9ca3af;
+  }
+
+  .row strong {
+    color: #e5e7eb;
+  }
+
+  .total-line {
+    border-top-color: #1f2937;
+  }
+
+  .detail-actions {
+    background: #05060a;
+    box-shadow: 0 -12px 30px rgba(0, 0, 0, 0.8);
   }
 }
 </style>

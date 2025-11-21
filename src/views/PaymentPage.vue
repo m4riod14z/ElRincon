@@ -1,4 +1,3 @@
-<!-- src/views/PaymentView.vue -->
 <template>
   <ion-page>
     <ion-header>
@@ -46,29 +45,16 @@
             <ion-input v-model="email" type="email" inputmode="email" label="Email" label-placement="floating" />
           </ion-item>
           <ion-item>
-            <ion-input
-              v-model="phone"
-              type="tel"
-              inputmode="numeric"
-              :maxlength="10"
-              label="Teléfono (10 dígitos)"
-              label-placement="floating"
-            />
+            <ion-input v-model="phone" type="tel" inputmode="numeric" :maxlength="10" label="Teléfono (10 dígitos)"
+              label-placement="floating" />
           </ion-item>
 
           <!-- ====== MÉTODO: TARJETAS CON ICONO ====== -->
           <div class="mt">
             <div class="methods-title">¿Prefieres otro método de pago?</div>
             <div class="methods-grid">
-              <button
-                v-for="m in methods"
-                :key="m.value"
-                class="method-card"
-                :class="{ selected: method === m.value }"
-                type="button"
-                @click="method = m.value"
-                :aria-pressed="method === m.value"
-              >
+              <button v-for="m in methods" :key="m.value" class="method-card" :class="{ selected: method === m.value }"
+                type="button" @click="method = m.value" :aria-pressed="method === m.value">
                 <img :src="m.icon" :alt="m.label" />
                 <span>{{ m.label }}</span>
               </button>
@@ -78,31 +64,16 @@
           <!-- ====== CAMPOS DE TARJETA (SOLO SI TARJETA) ====== -->
           <template v-if="method === 'card'">
             <ion-item class="mt">
-              <ion-input
-                v-model="cardNumber"
-                inputmode="numeric"
-                :maxlength="16"
-                label="Número de tarjeta (16)"
-                label-placement="floating"
-              />
+              <ion-input v-model="cardNumber" inputmode="numeric" :maxlength="16" label="Número de tarjeta (16)"
+                label-placement="floating" />
             </ion-item>
             <ion-item>
-              <ion-input
-                v-model="cardExp"
-                placeholder="MM/YY"
-                :maxlength="5"
-                label="Expiración"
-                label-placement="floating"
-              />
+              <ion-input v-model="cardExp" placeholder="MM/YY" :maxlength="5" label="Expiración"
+                label-placement="floating" />
             </ion-item>
             <ion-item>
-              <ion-input
-                v-model="cardCvv"
-                inputmode="numeric"
-                :maxlength="3"
-                label="CVV (3)"
-                label-placement="floating"
-              />
+              <ion-input v-model="cardCvv" inputmode="numeric" :maxlength="3" label="CVV (3)"
+                label-placement="floating" />
             </ion-item>
           </template>
 
@@ -122,13 +93,8 @@
         </ion-card-content>
       </ion-card>
 
-      <ion-toast
-        :is-open="toastOpen"
-        message="Pago aceptado"
-        duration="1800"
-        color="success"
-        @didDismiss="toastOpen = false"
-      />
+      <ion-toast :is-open="toastOpen" message="Pago aceptado" duration="1800" color="success"
+        @didDismiss="toastOpen = false" />
     </ion-content>
   </ion-page>
 </template>
@@ -241,9 +207,6 @@ const cardOk = computed(() => {
 })
 
 // ===== GOOGLE MAPS + GEOCODING =====
-
-// usa la misma key que en tu index.html (puedes ponerla igual aquí)
-// idealmente luego la sacas a una variable de entorno
 const GOOGLE_MAPS_KEY = 'AIzaSyBWRwXzKtTw1eu9TCzNR-ycy3yL-mZw9As'
 
 let gmap: any = null
@@ -283,13 +246,15 @@ function initMap() {
   gmap = new win.google.maps.Map(el, {
     center: { lat: lat.value, lng: lng.value },
     zoom: 14,
-    disableDefaultUI: true
+    disableDefaultUI: true,
+    // 👇 IMPORTANTE: captura todos los gestos dentro del mapa
+    gestureHandling: 'greedy'
   })
 
   gmarker = new win.google.maps.Marker({
     position: { lat: lat.value, lng: lng.value },
     map: gmap,
-    draggable: true // 👈 se puede arrastrar
+    draggable: true
   })
 
   // click en el mapa mueve el marcador
@@ -451,14 +416,17 @@ async function pay() {
 .mt {
   margin-top: 10px;
 }
+
 .row {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
+
 .total {
   font-weight: 800;
 }
+
 .err {
   display: block;
   margin-top: 8px;
@@ -469,11 +437,13 @@ async function pay() {
   font-weight: 700;
   margin-bottom: 8px;
 }
+
 .methods-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 10px;
 }
+
 .method-card {
   border: 1.5px solid var(--ion-color-medium, #c8c8c8);
   background: var(--ion-color-light, #fff);
@@ -488,22 +458,27 @@ async function pay() {
     box-shadow 0.15s,
     transform 0.05s;
 }
+
 .method-card img {
   width: 44px;
   height: 44px;
   object-fit: contain;
 }
+
 .method-card span {
   font-weight: 600;
   font-size: 0.9rem;
 }
+
 .method-card:active {
   transform: scale(0.98);
 }
+
 .method-card.selected {
   border-color: var(--ion-color-primary);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--ion-color-primary) 20%, transparent);
 }
+
 @media (max-width: 390px) {
   .methods-grid {
     grid-template-columns: repeat(2, 1fr);
