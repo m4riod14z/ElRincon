@@ -7,41 +7,41 @@
                 </IonButtons>
                 <IonTitle>El Rincón</IonTitle>
             </IonToolbar>
-        </IonHeader>
+            </IonHeader>
 
-        <IonContent class="ion-padding login-content" fullscreen>
-            <h1 class="title">Ingresa a tu cuenta</h1>
+            <IonContent class="ion-padding login-content" fullscreen>
+                <h1 class="title">Ingresa a tu cuenta</h1>
 
-            <!-- Aviso temporal -->
-            <div v-if="authAlertVisible" class="inline-alert">
-                {{ authAlert }}
-            </div>
+                <!-- Aviso temporal -->
+                <div v-if="authAlertVisible" class="inline-alert">
+                    {{ authAlert }}
+                </div>
 
-            <!-- Email -->
-            <IonItem class="field">
-                <IonInput type="email" v-model="email" label="Correo electrónico" label-placement="floating"
-                    inputmode="email" autocomplete="email" required @ionBlur="touchedEmail = true" placeholder="tunombre@ejemplo.com" />
-            </IonItem>
-            <IonText v-if="emailError" color="danger" class="hint">{{ emailError }}</IonText>
+                <!-- Email -->
+                <IonItem class="field">
+                    <IonInput type="email" v-model="email" label="Correo electrónico" label-placement="floating"
+                        inputmode="email" autocomplete="email" required @ionBlur="touchedEmail = true" placeholder="tunombre@ejemplo.com" />
+                </IonItem>
+                <IonText v-if="emailError" color="danger" class="hint">{{ emailError }}</IonText>
 
-            <!-- Contraseña -->
-            <IonItem class="field">
-                <IonInput :type="showPassword ? 'text' : 'password'" v-model="password" label="Contraseña" label-placement="floating"
-                    autocomplete="current-password" required @ionBlur="touchedPassword = true" />
-                <IonButton slot="end" fill="clear" size="small" @click="togglePassword">
-                    <IonIcon :icon="showPassword ? eyeOffOutline : eyeOutline" />
+                <!-- Contraseña -->
+                <IonItem class="field">
+                    <IonInput :type="showPassword ? 'text' : 'password'" v-model="password" label="Contraseña" label-placement="floating"
+                        autocomplete="current-password" required @ionBlur="touchedPassword = true" />
+                    <IonButton slot="end" fill="clear" size="small" @click="togglePassword">
+                        <IonIcon :icon="showPassword ? eyeOffOutline : eyeOutline" />
+                    </IonButton>
+                </IonItem>
+                <IonText v-if="passwordError" color="danger" class="hint">{{ passwordError }}</IonText>
+
+                <!-- Continuar -->
+                <IonButton expand="block" color="primary" :disabled="!formOk || loading" @click="onSubmit"
+                    class="submit-btn btn-primary">
+                    {{ loading ? 'Ingresando' : 'Continuar' }}
                 </IonButton>
-            </IonItem>
-            <IonText v-if="passwordError" color="danger" class="hint">{{ passwordError }}</IonText>
-
-            <!-- Continuar -->
-            <IonButton expand="block" color="primary" :disabled="!formOk || loading" @click="onSubmit"
-                class="submit-btn btn-primary">
-                {{ loading ? 'Ingresando' : 'Continuar' }}
-            </IonButton>
-        </IonContent>
-    </IonPage>
-</template>
+            </IonContent>
+        </IonPage>
+    </template>
 
 <script setup lang="ts">
 import {
@@ -130,7 +130,7 @@ async function onSubmit() {
 }
 
 .field {
-    margin-bottom: 16px; /* más separación entre campos */
+    margin-bottom: 24px; /* aún más separación entre campos */
     --background: transparent;
     --inner-padding-start: 0;
     --inner-padding-end: 0;
@@ -142,13 +142,35 @@ async function onSubmit() {
 
 /* Ajustes para aumentar el espacio entre label flotante y el contenido del input */
 .field ion-input {
-    --padding-top: 12px;
-    --padding-bottom: 12px;
+    --padding-top: 24px; /* dejar más espacio arriba dentro del input */
+    --padding-bottom: 20px; /* y abajo para mejorar el área táctil */
 }
 
 .field ion-label {
-    margin-bottom: 8px;
-    font-weight: 600;
+    margin-bottom: 12px;
+    font-weight: 700;
+}
+
+/* Aumentar el área táctil del botón "ver contraseña" */
+.field ion-button[slot="end"] {
+    min-width: 48px;
+    height: 48px;
+    --padding-start: 10px;
+    --padding-end: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+}
+
+/* Si el icono queda muy a la derecha en pantallas pequeñas, reducir margen */
+.field ion-button[slot="end"] ion-icon {
+    font-size: 1.2rem;
+}
+
+/* Aumentar espacio entre el título de la página y el primer campo */
+.login-content .title {
+    margin-bottom: 22px;
 }
 
 /* floating labels are used (matching RegisterPage) */

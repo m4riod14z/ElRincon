@@ -34,7 +34,17 @@ supabase.auth.onAuthStateChange(async (event, session) => {
     if (otpPending) return
     clearCachedUserRole()
     clearCachedUserRole()
-    return go('/tabs/tab1')
+    // Only navigate to tabs after sign-in when user is on auth or entry pages.
+    // If the user is currently on another page inside the app (e.g., payment), don't force navigation.
+    try {
+      const curr = router.currentRoute.value.path
+      if (curr === '/' || curr === '/home' || curr === '/login' || curr === '/register' || curr.startsWith('/auth')) {
+        return go('/tabs/tab1')
+      }
+    } catch (err) {
+      // fallback to safe navigation
+      return go('/tabs/tab1')
+    }
   }
 
   if (event === 'SIGNED_OUT') {

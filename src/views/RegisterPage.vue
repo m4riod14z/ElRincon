@@ -14,14 +14,14 @@
       <ion-list class="form">
         <!-- Email -->
         <ion-item class="field">
-          <ion-input ref="emailInput" type="email" v-model="email" label="Email" label-placement="floating"
+        <ion-input ref="emailInput" type="email" v-model="email" label="Email" label-placement="stacked"
             inputmode="email" autocomplete="email" required />
         </ion-item>
 
         <!-- Contraseña -->
         <ion-item class="field">
           <ion-input :type="show1 ? 'text' : 'password'" v-model="password" label="Contraseña"
-            label-placement="floating" autocomplete="new-password" required />
+            label-placement="stacked" autocomplete="new-password" required />
           <ion-button slot="end" fill="clear" size="small" @click="show1 = !show1">
             {{ show1 ? 'Ocultar' : 'Ver' }}
           </ion-button>
@@ -50,7 +50,7 @@
         <!-- Confirmar Contraseña -->
         <ion-item class="field">
           <ion-input :type="show2 ? 'text' : 'password'" v-model="password2" label="Confirmar Contraseña"
-            label-placement="floating" autocomplete="new-password" required />
+            label-placement="stacked" autocomplete="new-password" required />
           <ion-button slot="end" fill="clear" size="small" @click="show2 = !show2">
             {{ show2 ? 'Ocultar' : 'Ver' }}
           </ion-button>
@@ -352,6 +352,11 @@ function closeTerms() {
   --inner-padding-end: 8px;
   margin-bottom: 6px;
   border-radius: 12px;
+}
+
+.field ion-input::part(label) {
+  display: block;
+  margin-bottom: 6px;
 }
 
 .hints {
