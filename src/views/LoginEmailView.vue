@@ -9,7 +9,7 @@
             </IonToolbar>
         </IonHeader>
 
-        <IonContent class="ion-padding" fullscreen>
+        <IonContent class="ion-padding login-content" fullscreen>
             <h1 class="title">Ingresa a tu cuenta</h1>
 
             <!-- Aviso temporal -->
@@ -18,31 +18,25 @@
             </div>
 
             <!-- Email -->
-            <IonItem lines="none" class="field ion-no-padding">
-                <IonLabel position="stacked" class="stacked-label">Correo electrónico</IonLabel>
-                <div class="input-frame" :class="{ invalid: !!emailError }">
-                    <IonInput type="email" placeholder="tunombre@ejemplo.com" v-model="email" inputmode="email"
-                        autocomplete="email" @ionBlur="touchedEmail = true" />
-                </div>
+            <IonItem class="field">
+                <IonInput type="email" v-model="email" label="Correo electrónico" label-placement="floating"
+                    inputmode="email" autocomplete="email" required @ionBlur="touchedEmail = true" placeholder="tunombre@ejemplo.com" />
             </IonItem>
             <IonText v-if="emailError" color="danger" class="hint">{{ emailError }}</IonText>
 
             <!-- Contraseña -->
-            <IonItem lines="none" class="field ion-no-padding">
-                <IonLabel position="stacked" class="stacked-label">Contraseña</IonLabel>
-                <div class="input-frame with-eye" :class="{ invalid: !!passwordError }">
-                    <IonInput :type="showPassword ? 'text' : 'password'" placeholder="Ingresa tu contraseña"
-                        v-model="password" autocomplete="current-password" @ionBlur="touchedPassword = true" />
-                    <button type="button" class="eye-plain" @click.stop="togglePassword" aria-label="Ver contraseña">
-                        <IonIcon :icon="showPassword ? eyeOffOutline : eyeOutline" />
-                    </button>
-                </div>
+            <IonItem class="field">
+                <IonInput :type="showPassword ? 'text' : 'password'" v-model="password" label="Contraseña" label-placement="floating"
+                    autocomplete="current-password" required @ionBlur="touchedPassword = true" />
+                <IonButton slot="end" fill="clear" size="small" @click="togglePassword">
+                    <IonIcon :icon="showPassword ? eyeOffOutline : eyeOutline" />
+                </IonButton>
             </IonItem>
             <IonText v-if="passwordError" color="danger" class="hint">{{ passwordError }}</IonText>
 
             <!-- Continuar -->
-            <IonButton expand="block" color="danger" :disabled="!formOk || loading" @click="onSubmit"
-                class="submit-btn">
+            <IonButton expand="block" color="primary" :disabled="!formOk || loading" @click="onSubmit"
+                class="submit-btn btn-primary">
                 {{ loading ? 'Ingresando' : 'Continuar' }}
             </IonButton>
         </IonContent>
@@ -136,7 +130,7 @@ async function onSubmit() {
 }
 
 .field {
-    margin-bottom: 10px;
+    margin-bottom: 16px; /* más separación entre campos */
     --background: transparent;
     --inner-padding-start: 0;
     --inner-padding-end: 0;
@@ -146,10 +140,22 @@ async function onSubmit() {
     --padding-end: 0;
 }
 
-.stacked-label {
-    display: block;
-    margin: 4px 0 6px;
+/* Ajustes para aumentar el espacio entre label flotante y el contenido del input */
+.field ion-input {
+    --padding-top: 12px;
+    --padding-bottom: 12px;
+}
+
+.field ion-label {
+    margin-bottom: 8px;
     font-weight: 600;
+}
+
+/* floating labels are used (matching RegisterPage) */
+
+/* Push the whole form down a bit so it's not too close to the top */
+.login-content {
+    padding-top: 100px; /* increased to move form further down */
 }
 
 .input-frame {

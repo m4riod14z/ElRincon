@@ -266,7 +266,7 @@ const detalleAbierto = ref(false)
 const seleccionado = ref<any>(null)
 
 function abrirDetalle(p: any) { seleccionado.value = p; detalleAbierto.value = true }
-function cerrarDetalle() { detalleAbierto.value = false; seleccionado.value = null; clearSelections() }
+function cerrarDetalle() { try { (document.activeElement as HTMLElement | null)?.blur() } catch {} detalleAbierto.value = false; seleccionado.value = null; clearSelections() }
 
 const basePrice = computed(() => seleccionado.value?.price ?? 0)
 

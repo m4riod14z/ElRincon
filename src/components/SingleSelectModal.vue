@@ -1,10 +1,10 @@
 <template>
-    <ion-modal :is-open="open" @didDismiss="$emit('update:open', false)">
+    <ion-modal :is-open="open" @didDismiss="onDidDismiss">
         <ion-header>
             <ion-toolbar>
                 <ion-title>{{ title }}</ion-title>
                 <ion-buttons slot="end">
-                    <ion-button fill="clear" @click="$emit('update:open', false)">Cerrar</ion-button>
+                    <ion-button fill="clear" @click="onClose">Cerrar</ion-button>
                 </ion-buttons>
             </ion-toolbar>
         </ion-header>
@@ -24,7 +24,7 @@
                 </ion-list>
             </ion-radio-group>
 
-            <ion-button expand="block" class="mt" @click="$emit('update:open', false)">Aceptar</ion-button>
+            <ion-button expand="block" class="mt" @click="onAccept">Aceptar</ion-button>
         </ion-content>
     </ion-modal>
 </template>
@@ -49,6 +49,21 @@ const model = computed({
     set: (v) => emit("update:modelValue", v),
 });
 const fmt = (n: number) => fmtCOP(n);
+
+function onClose() {
+    try { (document.activeElement as HTMLElement | null)?.blur() } catch {}
+    emit('update:open', false)
+}
+
+function onAccept() {
+    try { (document.activeElement as HTMLElement | null)?.blur() } catch {}
+    emit('update:open', false)
+}
+
+function onDidDismiss() {
+    try { (document.activeElement as HTMLElement | null)?.blur() } catch {}
+    emit('update:open', false)
+}
 </script>
 
 <style scoped>

@@ -45,6 +45,12 @@ supabase.auth.onAuthStateChange(async (event, session) => {
   }
 })
 
+// Ensure we remove focus from any active element before navigating
+router.beforeEach((to, from, next) => {
+  try { (document.activeElement as HTMLElement | null)?.blur(); } catch {}
+  next()
+})
+
 router.isReady().then(() => app.mount('#app'))
 
 // Deep link handler for Supabase OAuth on native platforms

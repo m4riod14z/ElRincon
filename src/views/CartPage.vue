@@ -257,7 +257,21 @@ watch(items, checkNow, { deep: true })
 async function confirmarPedido() {
   await checkNow()
   if (hasIssues.value) return
-  router.push('/payment')
+  try {
+    await router.push('/payment')
+  } catch (navErr) {
+    console.error('Navigation to /payment failed:', navErr)
+    // Try named route as fallback
+    try {
+      await router.push({ name: 'payment' })
+      return
+    } catch (e2) {
+      console.error('Fallback navigation by name also failed:', e2)
+    }
+
+    // Fallback: show a simple alert so the user knows
+    try { alert('No se pudo ir a la pasarela de pago. Intenta nuevamente.') } catch {}
+  }
 }
 </script>
 
@@ -279,7 +293,7 @@ async function confirmarPedido() {
 
 /* Card del item */
 .cart-item {
-  --background: var(--ion-item-background, #0b0b0b);
+  --background: #ffffff;
   --inner-padding-start: 0;
   --inner-padding-end: 0;
   margin-bottom: 10px;
@@ -303,7 +317,7 @@ async function confirmarPedido() {
   border-radius: 10px;
   overflow: hidden;
   flex-shrink: 0;
-  background: #111827;
+  background: #f3f4f6;
 }
 
 .thumb-wrapper img {

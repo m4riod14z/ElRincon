@@ -1,10 +1,10 @@
 <template>
-    <ion-modal :is-open="isOpen" @didDismiss="emit('close')">
+    <ion-modal :is-open="isOpen" @didDismiss="onDidDismiss">
         <ion-header>
             <ion-toolbar>
                 <ion-title>Detalle del pedido</ion-title>
                 <ion-buttons slot="end">
-                    <ion-button @click="emit('close')">Cerrar</ion-button>
+                    <ion-button @click="onClose">Cerrar</ion-button>
                 </ion-buttons>
             </ion-toolbar>
         </ion-header>
@@ -134,15 +134,25 @@ function mapStatus(st: Order['status']) {
         default: return st
     }
 }
+
+function onClose() {
+    try { (document.activeElement as HTMLElement | null)?.blur() } catch {}
+    emit('close')
+}
+
+function onDidDismiss() {
+    try { (document.activeElement as HTMLElement | null)?.blur() } catch {}
+    emit('close')
+}
 </script>
 
 <style scoped>
 .detail-card {
-    background: var(--ion-item-background, #111111);
+    background: #ffffff;
     border-radius: 12px;
     padding: 16px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-    border: 1px solid rgba(148, 163, 184, 0.25);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+    border: 1px solid #000000;
 }
 
 .detail-header {
@@ -159,7 +169,7 @@ function mapStatus(st: Order['status']) {
 .detail-address {
     margin: 0;
     font-size: 14px;
-    color: var(--ion-color-medium);
+    color: #111827;
 }
 
 .detail-main {
@@ -173,7 +183,7 @@ function mapStatus(st: Order['status']) {
 .detail-image {
     border-radius: 10px;
     overflow: hidden;
-    background: #000;
+    background: #f3f4f6;
 }
 
 .detail-image img {
@@ -197,7 +207,7 @@ function mapStatus(st: Order['status']) {
 
 .detail-sub {
     margin: 0;
-    color: var(--ion-color-medium);
+    color: #374151;
 }
 
 .detail-items-list {
@@ -213,7 +223,7 @@ function mapStatus(st: Order['status']) {
 .detail-totals {
     margin-top: 16px;
     padding-top: 8px;
-    border-top: 1px solid rgba(148, 163, 184, 0.35);
+    border-top: 1px solid rgba(0,0,0,0.08);
     display: flex;
     flex-direction: column;
     gap: 4px;
@@ -224,6 +234,20 @@ function mapStatus(st: Order['status']) {
     font-weight: 600;
 }
 
+/* Force readable text colors inside the white card to avoid dark-mode inheritance issues */
+.detail-card,
+.detail-card * {
+    color: #111827 !important;
+}
+
+/* But keep subtle texts slightly lighter */
+.detail-sub,
+.detail-client,
+.detail-address,
+.detail-totals {
+    color: #374151 !important;
+}
+
 @media (max-width: 480px) {
     .detail-main {
         grid-template-columns: 1fr;
@@ -231,6 +255,28 @@ function mapStatus(st: Order['status']) {
 
     .detail-image img {
         height: 180px;
+    }
+}
+
+/* Revert to dark styling when user prefers dark scheme so modal remains readable */
+@media (prefers-color-scheme: dark) {
+    .detail-card {
+        background: var(--ion-item-background, #111111) !important;
+        border: 1px solid rgba(148, 163, 184, 0.25);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    }
+    .detail-card,
+    .detail-card * {
+        color: #e5e7eb !important;
+    }
+    .detail-sub,
+    .detail-client,
+    .detail-address,
+    .detail-totals {
+        color: var(--ion-color-medium) !important;
+    }
+    .detail-image {
+        background: #000 !important;
     }
 }
 </style>

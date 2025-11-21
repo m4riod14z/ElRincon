@@ -121,6 +121,8 @@ import {
   IonToast
 } from '@ionic/vue'
 import { ref, computed, onMounted } from 'vue'
+import { Capacitor } from '@capacitor/core'
+import { Geolocation } from '@capacitor/geolocation'
 import { useRouter } from 'vue-router'
 import { useCart } from '@/controllers/useCart'
 import { validateAvailability } from '@/services/AvailabilityService'
@@ -159,7 +161,7 @@ async function prefillCustomerDetails() {
     if (last && !secondName.value) secondName.value = last
     if (emailCandidate && !email.value) email.value = emailCandidate
     if (phoneCandidate && !phone.value) phone.value = phoneCandidate
-  } catch {
+  } catch (e) {
     // ignorar silenciosamente
   }
 }
@@ -231,7 +233,7 @@ async function updateAddressFromCoords() {
     } else {
       address.value = ''
     }
-  } catch {
+  } catch (e) {
     address.value = ''
   }
 }
@@ -281,46 +283,66 @@ function initMap() {
 async function useMyLocation() {
   try {
     geoError.value = ''
-    if (!('geolocation' in navigator)) {
-      throw new Error('La geolocalización no está disponible en este dispositivo.')
+
+    // On native platforms use Capacitor Geolocation (requests permission properly)
+    if (typeof Capacitor !== 'undefined' && Capacitor.isNativePlatform && Capacitor.isNativePlatform()) {
+      const perm = await Geolocation.requestPermissions()
+      const granted = (perm as any)?.location === 'granted' || (perm as any)?.location === 'always' || (perm as any)?.location === 'while_in_use'
+      if (!granted) throw new Error('permission_denied')
+
+      const pos = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 15000 })
+      lat.value = pos.coords.latitude
+      lng.value = pos.coords.longitude
+    } else {
+      // Web fallback
+      if (!('geolocation' in navigator)) throw new Error('La geolocalización no está disponible en este dispositivo.')
+      try {
+        // @ts-ignore
+        const status = await (navigator as any).permissions?.query?.({ name: 'geolocation' })
+        if (status && status.state === 'denied') throw new Error('permission_denied')
+      } catch (_) {
+        // ignore
+      }
+
+      await new Promise<void>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            lat.value = pos.coords.latitude
+            lng.value = pos.coords.longitude
+            resolve()
+          },
+          (e) => reject(e),
+          { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+        )
+      })
     }
 
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        lat.value = pos.coords.latitude
-        lng.value = pos.coords.longitude
+    // Update map marker / center
+    if (gmap) {
+      const position = { lat: lat.value, lng: lng.value }
+      gmap.setCenter(position)
+      gmap.setZoom(16)
+      if (gmarker) {
+        gmarker.setPosition(position)
+      } else {
+        const win = window as any
+        gmarker = new win.google.maps.Marker({ position, map: gmap, draggable: true })
+        gmarker.addListener('dragend', (e: any) => {
+          if (!e?.latLng) return
+          lat.value = e.latLng.lat()
+          lng.value = e.latLng.lng()
+          updateAddressFromCoords()
+        })
+      }
+    }
 
-        if (gmap) {
-          const position = { lat: lat.value, lng: lng.value }
-          gmap.setCenter(position)
-          gmap.setZoom(16)
-          if (gmarker) {
-            gmarker.setPosition(position)
-          } else {
-            const win = window as any
-            gmarker = new win.google.maps.Marker({
-              position,
-              map: gmap,
-              draggable: true
-            })
-            gmarker.addListener('dragend', (e: any) => {
-              if (!e?.latLng) return
-              lat.value = e.latLng.lat()
-              lng.value = e.latLng.lng()
-              updateAddressFromCoords()
-            })
-          }
-        }
-
-        updateAddressFromCoords()
-      },
-      (e) => {
-        geoError.value = e?.message ?? 'No fue posible obtener tu ubicación.'
-      },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
-    )
+    await updateAddressFromCoords()
   } catch (e: any) {
-    geoError.value = e?.message ?? 'No fue posible obtener tu ubicación.'
+    if (e === 'permission_denied' || e?.code === 1 || (e?.message && String(e.message).toLowerCase().includes('denied'))) {
+      geoError.value = 'Permiso de geolocalización denegado. Activa la ubicación en los ajustes del dispositivo o permite el permiso para la aplicación.'
+    } else {
+      geoError.value = e?.message ?? 'No fue posible obtener tu ubicación.'
+    }
   }
 }
 
@@ -333,10 +355,10 @@ onMounted(() => {
 // ===== pagar =====
 async function pay() {
   try {
+    paying.value = true
     err.value = ''
     if (!firstName.value.trim()) throw new Error('Ingresa tu nombre.')
-    if (!secondName.value.trim())
-      throw new Error('Ingresa tu segundo nombre o apellido.')
+    if (!secondName.value.trim()) throw new Error('Ingresa tu segundo nombre o apellido.')
     if (!emailOk.value) throw new Error('Email inválido.')
     if (!phoneOk.value) throw new Error('El teléfono debe tener 10 dígitos.')
     if (!items.value.length) throw new Error('Tu carrito está vacío.')
@@ -352,31 +374,32 @@ async function pay() {
     if (issues.length) {
       const msg = issues
         .map((i) => {
-          const t =
-            i.kind === 'product'
-              ? 'Producto'
-              : i.kind === 'addition'
-                ? 'Adición'
-                : 'Bebida'
-          return `• ${t}: ${i.name ?? i.id} no está disponible`
+          const kind = i.kind === 'product' ? 'Producto' : i.kind === 'addition' ? 'Adición' : 'Bebida'
+          return `• ${kind}: ${i.name ?? i.id} no está disponible`
         })
         .join('\n')
-      throw new Error(msg)
+      throw new Error(`No pudimos confirmar:\n${msg}`)
     }
 
-    paying.value = true
-    await new Promise((r) => setTimeout(r, 1200))
+    // simular pago / procesar
+    await new Promise((r) => setTimeout(r, 800))
+
+    const payloadItems = items.value.map((it: any) => ({
+      productId: it.productId,
+      basePrice: it.basePrice,
+      qty: it.qty,
+      addition: it.addition ? { id: it.addition.id, name: it.addition.name, price: it.addition.price } : null,
+      drink: it.drink ? { id: it.drink.id, name: it.drink.name, price: it.drink.price } : null
+    }))
 
     await createOrder({
-      firstName: firstName.value.trim(),
-      lastName: secondName.value.trim(),
-      // 👇 AQUÍ SOLO VA LA DIRECCIÓN, SIN COORDENADAS
-      address: address.value || 'Dirección no disponible',
-      lat: lat.value,
-      lng: lng.value,
-      items: items.value,
+      firstName: firstName.value,
+      lastName: secondName.value,
+      address: address.value,
+      lat: lat.value ?? null,
+      lng: lng.value ?? null,
+      items: payloadItems,
       total: total.value
-      // paymentMethod: method.value,
     })
 
     toastOpen.value = true
