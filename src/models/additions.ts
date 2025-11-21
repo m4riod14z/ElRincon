@@ -4,7 +4,7 @@ import type { OptionRow } from "./types";
 export async function fetchAdditions(): Promise<OptionRow[]> {
     const { data, error } = await supabase
         .from("additions")
-        .select("id,name,price,available")
+        .select("id,name,price,available,image_url")
         .eq("available", true)
         .order("name", { ascending: true });
 
@@ -15,7 +15,7 @@ export async function fetchAdditions(): Promise<OptionRow[]> {
 export async function fetchAllAdditions(): Promise<OptionRow[]> {
     const { data, error } = await supabase
         .from("additions")
-        .select("id,name,price,available")
+        .select("id,name,price,available,image_url")
         .order("name", { ascending: true });
     if (error) throw error;
     return (data ?? []) as OptionRow[];

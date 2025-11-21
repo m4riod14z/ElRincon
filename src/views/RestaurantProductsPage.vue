@@ -36,7 +36,7 @@
         <div class="carousel">
           <div class="slide" v-for="a in additions" :key="a.id">
             <div class="card">
-              <img src="/Logo.png" alt="Adición" class="thumb" />
+              <img :src="a.image_url || '/Logo.png'" alt="Adición" class="thumb" />
               <div class="info">
                 <div class="title">{{ a.name }}</div>
                 <div class="price">{{ fmtCOP(a.price) }}</div>
@@ -63,7 +63,7 @@
         <div class="carousel">
           <div class="slide" v-for="d in drinks" :key="d.id">
             <div class="card">
-              <img src="/Logo.png" alt="Bebida" class="thumb" />
+              <img :src="d.image_url || '/Logo.png'" alt="Bebida" class="thumb" />
               <div class="info">
                 <div class="title">{{ d.name }}</div>
                 <div class="price">{{ fmtCOP(d.price) }}</div>
@@ -145,6 +145,12 @@
           </ion-item>
           <ion-text color="danger" v-if="errors.price">{{ errors.price }}</ion-text>
 
+          <ion-item>
+            <ion-label position="stacked">Imagen (URL)</ion-label>
+            <ion-input v-model="optionForm.image_url" />
+          </ion-item>
+          <ion-text color="danger" v-if="errors.image_url">{{ errors.image_url }}</ion-text>
+
           <ion-button expand="block" class="ion-margin-top" @click="saveOption" :disabled="saving">
             {{ saving ? 'Guardando…' : 'Guardar' }}
           </ion-button>
@@ -202,11 +208,11 @@ type OptionKind = 'addition' | 'drink'
 const optionKind = ref<OptionKind>('addition')
 const optionKindLabel = computed(() => optionKind.value === 'addition' ? 'Adición' : 'Bebida')
 const showOptionModal = ref(false)
-const optionForm = reactive<Partial<OptionRow>>({ id: undefined, name: '', price: 0, available: true })
+const optionForm = reactive<Partial<OptionRow>>({ id: undefined, name: '', price: 0, available: true, image_url: '' })
 function openOptionForm(kind: OptionKind, row?: OptionRow) {
   optionKind.value = kind
   if (row) Object.assign(optionForm, row)
-  else Object.assign(optionForm, { id: undefined, name: '', price: 0, available: true })
+  else Object.assign(optionForm, { id: undefined, name: '', price: 0, available: true, image_url: '' })
   showOptionModal.value = true
 }
 function closeOptionForm() { showOptionModal.value = false }
@@ -250,7 +256,7 @@ async function saveProduct() {
 }
 
 async function saveOption() {
-  const ok = validateCommon(optionForm.name || '', Number(optionForm.price))
+  const ok = validateCommon(optionForm.name || '', Number(optionForm.price)) && validateImageUrl(optionForm.image_url as any)
   if (!ok) return
   saving.value = true
   try {
@@ -259,7 +265,8 @@ async function saveOption() {
         id: optionForm.id as number | undefined,
         name: (optionForm.name || '').trim(),
         price: Number(optionForm.price),
-        available: optionForm.available ?? true
+        available: optionForm.available ?? true,
+        image_url: (optionForm.image_url || null) as string | null
       })
       const idx = additions.value.findIndex(a => a.id === saved.id)
       if (idx >= 0) additions.value.splice(idx, 1, saved)
@@ -269,7 +276,8 @@ async function saveOption() {
         id: optionForm.id as number | undefined,
         name: (optionForm.name || '').trim(),
         price: Number(optionForm.price),
-        available: optionForm.available ?? true
+        available: optionForm.available ?? true,
+        image_url: (optionForm.image_url || null) as string | null
       })
       const idx = drinks.value.findIndex(d => d.id === saved.id)
       if (idx >= 0) drinks.value.splice(idx, 1, saved)
