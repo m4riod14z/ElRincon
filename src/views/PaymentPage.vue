@@ -25,7 +25,9 @@
           <ion-button size="small" fill="outline" @click="useMyLocation">
             Usar mi ubicación
           </ion-button>
-          <ion-text v-if="geoError" color="danger" class="err">{{ geoError }}</ion-text>
+          <ion-text v-if="geoError" color="danger" class="err">
+            {{ geoError }}
+          </ion-text>
 
           <!-- Dirección calculada -->
           <ion-text v-if="address" class="addr">
@@ -34,27 +36,44 @@
 
           <!-- ====== NOMBRES ====== -->
           <ion-item class="mt">
-            <ion-input v-model="firstName" label="Nombre" label-placement="floating" />
+            <ion-input
+              v-model="firstName"
+              label="Nombre"
+              label-placement="floating"
+            />
           </ion-item>
           <ion-item>
-            <ion-input v-model="secondName" label="Segundo nombre / Apellido" label-placement="floating" />
+            <ion-input
+              v-model="secondName"
+              label="Segundo nombre / Apellido"
+              label-placement="floating"
+            />
           </ion-item>
 
-          <!-- ====== CONTACTO ====== -->
+          <!-- ====== CONTACTO (solo email) ====== -->
           <ion-item>
-            <ion-input v-model="email" type="email" inputmode="email" label="Email" label-placement="floating" />
-          </ion-item>
-          <ion-item>
-            <ion-input v-model="phone" type="tel" inputmode="numeric" :maxlength="10" label="Teléfono (10 dígitos)"
-              label-placement="floating" />
+            <ion-input
+              v-model="email"
+              type="email"
+              inputmode="email"
+              label="Email"
+              label-placement="floating"
+            />
           </ion-item>
 
           <!-- ====== MÉTODO: TARJETAS CON ICONO ====== -->
           <div class="mt">
             <div class="methods-title">¿Prefieres otro método de pago?</div>
             <div class="methods-grid">
-              <button v-for="m in methods" :key="m.value" class="method-card" :class="{ selected: method === m.value }"
-                type="button" @click="method = m.value" :aria-pressed="method === m.value">
+              <button
+                v-for="m in methods"
+                :key="m.value"
+                class="method-card"
+                :class="{ selected: method === m.value }"
+                type="button"
+                @click="method = m.value"
+                :aria-pressed="method === m.value"
+              >
                 <img :src="m.icon" :alt="m.label" />
                 <span>{{ m.label }}</span>
               </button>
@@ -64,16 +83,31 @@
           <!-- ====== CAMPOS DE TARJETA (SOLO SI TARJETA) ====== -->
           <template v-if="method === 'card'">
             <ion-item class="mt">
-              <ion-input v-model="cardNumber" inputmode="numeric" :maxlength="16" label="Número de tarjeta (16)"
-                label-placement="floating" />
+              <ion-input
+                v-model="cardNumber"
+                inputmode="numeric"
+                :maxlength="16"
+                label="Número de tarjeta (16)"
+                label-placement="floating"
+              />
             </ion-item>
             <ion-item>
-              <ion-input v-model="cardExp" placeholder="MM/YY" :maxlength="5" label="Expiración"
-                label-placement="floating" />
+              <ion-input
+                v-model="cardExp"
+                placeholder="MM/YY"
+                :maxlength="5"
+                label="Expiración"
+                label-placement="floating"
+              />
             </ion-item>
             <ion-item>
-              <ion-input v-model="cardCvv" inputmode="numeric" :maxlength="3" label="CVV (3)"
-                label-placement="floating" />
+              <ion-input
+                v-model="cardCvv"
+                inputmode="numeric"
+                :maxlength="3"
+                label="CVV (3)"
+                label-placement="floating"
+              />
             </ion-item>
           </template>
 
@@ -84,17 +118,28 @@
 
           <ion-text v-if="err" color="danger" class="err">{{ err }}</ion-text>
 
-          <ion-button expand="block" class="mt" :disabled="paying" @click="pay">
+          <ion-button
+            expand="block"
+            class="mt"
+            :disabled="paying"
+            @click="pay"
+          >
             <ion-spinner v-if="paying" name="dots" />
             <span v-else>
-              Pagar {{ fmtCOP(total) }} <template v-if="methodLabel">— {{ methodLabel }}</template>
+              Pagar {{ fmtCOP(total) }}
+              <template v-if="methodLabel">— {{ methodLabel }}</template>
             </span>
           </ion-button>
         </ion-card-content>
       </ion-card>
 
-      <ion-toast :is-open="toastOpen" message="Pago aceptado" duration="1800" color="success"
-        @didDismiss="toastOpen = false" />
+      <ion-toast
+        :is-open="toastOpen"
+        message="Pago aceptado"
+        duration="1800"
+        color="success"
+        @didDismiss="toastOpen = false"
+      />
     </ion-content>
   </ion-page>
 </template>
@@ -118,7 +163,7 @@ import {
   IonButton,
   IonText,
   IonSpinner,
-  IonToast
+  IonToast,
 } from '@ionic/vue'
 import { ref, computed, onMounted } from 'vue'
 import { Capacitor } from '@capacitor/core'
@@ -133,59 +178,34 @@ const fmtCOP = (n: number) =>
   (n ?? 0).toLocaleString('es-CO', {
     style: 'currency',
     currency: 'COP',
-    maximumFractionDigits: 0
+    maximumFractionDigits: 0,
   })
 
 const router = useRouter()
 const { items, total, clear } = useCart()
 
-async function prefillCustomerDetails() {
-  try {
-    const { data: ures, error: uerr } = await supabase.auth.getUser()
-    if (uerr || !ures?.user) return
-    const user = ures.user
-    const fallbackEmail = user.email ?? ''
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('first_name, last_name, email, phone')
-      .eq('id', user.id)
-      .maybeSingle()
-
-    const first = profile?.first_name?.trim()
-    const last = profile?.last_name?.trim()
-    const emailCandidate = (profile?.email || fallbackEmail || '').trim()
-    const phoneCandidate = profile?.phone?.trim()
-
-    if (first && !firstName.value) firstName.value = first
-    if (last && !secondName.value) secondName.value = last
-    if (emailCandidate && !email.value) email.value = emailCandidate
-    if (phoneCandidate && !phone.value) phone.value = phoneCandidate
-  } catch (e) {
-    // ignorar silenciosamente
-  }
-}
-
 // ===== formulario =====
 const firstName = ref('')
 const secondName = ref('')
 const email = ref('')
-const phone = ref('')
 const method = ref<'nequi' | 'bancolombia' | 'card'>('nequi')
 
 // imágenes
 const iconNequi = new URL('@/assets/images/nequi.png', import.meta.url).href
-const iconBancolombia = new URL('@/assets/images/bancolombia.png', import.meta.url).href
+const iconBancolombia = new URL(
+  '@/assets/images/bancolombia.png',
+  import.meta.url,
+).href
 const iconCard = new URL('@/assets/images/tarjeta.png', import.meta.url).href
 
 const methods = [
   { value: 'nequi', label: 'Nequi', icon: iconNequi },
   { value: 'bancolombia', label: 'Bancolombia', icon: iconBancolombia },
-  { value: 'card', label: 'Tarjeta', icon: iconCard }
+  { value: 'card', label: 'Tarjeta', icon: iconCard },
 ] as const
 
 const methodLabel = computed(
-  () => methods.find((m) => m.value === method.value)?.label ?? ''
+  () => methods.find(m => m.value === method.value)?.label ?? '',
 )
 
 // tarjeta
@@ -199,7 +219,6 @@ const toastOpen = ref(false)
 
 // ===== validaciones =====
 const emailOk = computed(() => /\S+@\S+\.\S+/.test(email.value.trim()))
-const phoneOk = computed(() => /^\d{10}$/.test(phone.value))
 const cardOk = computed(() => {
   if (method.value !== 'card') return true
   const numOk = /^\d{16}$/.test(cardNumber.value)
@@ -207,6 +226,54 @@ const cardOk = computed(() => {
   const cvvOk = /^\d{3}$/.test(cardCvv.value)
   return numOk && expOk && cvvOk
 })
+
+// ===== precarga desde perfil =====
+async function prefillCustomerDetails() {
+  try {
+    const { data: ures } = await supabase.auth.getUser()
+    const user = ures?.user
+    if (!user) return
+
+    const fallbackEmail = user.email ?? ''
+
+    // === 1) PERFIL ===
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('first_name, last_name, email')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    const firstP = profile?.first_name?.trim()
+    const lastP  = profile?.last_name?.trim()
+    const emailP = (profile?.email || fallbackEmail).trim()
+
+    // === 2) ÚLTIMA ORDEN DEL CLIENTE (usa client_id, NO user_id) ===
+    const { data: orders } = await supabase
+      .from('orders')
+      .select('first_name, last_name')
+      .eq('client_id', user.id)              // 👈 CORREGIDO
+      .order('id', { ascending: false })
+      .limit(1)
+
+    const lastOrder = orders?.[0] ?? null
+    const firstO = lastOrder?.first_name?.trim()
+    const lastO  = lastOrder?.last_name?.trim()
+
+    // === 3) PREFILL CAMPOS DEL FORM ===
+    if (!firstName.value) {
+      firstName.value = firstP || firstO || ''
+    }
+    if (!secondName.value) {
+      secondName.value = lastP || lastO || ''
+    }
+    if (!email.value) {
+      email.value = emailP || fallbackEmail || ''
+    }
+    // teléfono ya no se usa
+  } catch {
+    // silencioso
+  }
+}
 
 // ===== GOOGLE MAPS + GEOCODING =====
 const GOOGLE_MAPS_KEY = 'AIzaSyBWRwXzKtTw1eu9TCzNR-ycy3yL-mZw9As'
@@ -233,7 +300,7 @@ async function updateAddressFromCoords() {
     } else {
       address.value = ''
     }
-  } catch (e) {
+  } catch {
     address.value = ''
   }
 }
@@ -249,17 +316,15 @@ function initMap() {
     center: { lat: lat.value, lng: lng.value },
     zoom: 14,
     disableDefaultUI: true,
-    // 👇 IMPORTANTE: captura todos los gestos dentro del mapa
-    gestureHandling: 'greedy'
+    gestureHandling: 'greedy',
   })
 
   gmarker = new win.google.maps.Marker({
     position: { lat: lat.value, lng: lng.value },
     map: gmap,
-    draggable: true
+    draggable: true,
   })
 
-  // click en el mapa mueve el marcador
   gmap.addListener('click', (e: any) => {
     if (!e?.latLng) return
     lat.value = e.latLng.lat()
@@ -268,7 +333,6 @@ function initMap() {
     updateAddressFromCoords()
   })
 
-  // arrastrar el pin para afinar dirección
   gmarker.addListener('dragend', (e: any) => {
     if (!e?.latLng) return
     lat.value = e.latLng.lat()
@@ -276,7 +340,6 @@ function initMap() {
     updateAddressFromCoords()
   })
 
-  // dirección inicial
   updateAddressFromCoords()
 }
 
@@ -284,40 +347,51 @@ async function useMyLocation() {
   try {
     geoError.value = ''
 
-    // On native platforms use Capacitor Geolocation (requests permission properly)
-    if (typeof Capacitor !== 'undefined' && Capacitor.isNativePlatform && Capacitor.isNativePlatform()) {
+    if (
+      typeof Capacitor !== 'undefined' &&
+      Capacitor.isNativePlatform &&
+      Capacitor.isNativePlatform()
+    ) {
       const perm = await Geolocation.requestPermissions()
-      const granted = (perm as any)?.location === 'granted' || (perm as any)?.location === 'always' || (perm as any)?.location === 'while_in_use'
+      const granted =
+        (perm as any)?.location === 'granted' ||
+        (perm as any)?.location === 'always' ||
+        (perm as any)?.location === 'while_in_use'
       if (!granted) throw new Error('permission_denied')
 
-      const pos = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 15000 })
+      const pos = await Geolocation.getCurrentPosition({
+        enableHighAccuracy: true,
+        timeout: 15000,
+      })
       lat.value = pos.coords.latitude
       lng.value = pos.coords.longitude
     } else {
-      // Web fallback
-      if (!('geolocation' in navigator)) throw new Error('La geolocalización no está disponible en este dispositivo.')
+      if (!('geolocation' in navigator)) {
+        throw new Error('La geolocalización no está disponible en este dispositivo.')
+      }
       try {
         // @ts-ignore
-        const status = await (navigator as any).permissions?.query?.({ name: 'geolocation' })
+        const status = await (navigator as any).permissions?.query?.({
+          name: 'geolocation',
+        })
         if (status && status.state === 'denied') throw new Error('permission_denied')
-      } catch (_) {
+      } catch {
         // ignore
       }
 
       await new Promise<void>((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(
-          (pos) => {
+          pos => {
             lat.value = pos.coords.latitude
             lng.value = pos.coords.longitude
             resolve()
           },
-          (e) => reject(e),
-          { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+          e => reject(e),
+          { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
         )
       })
     }
 
-    // Update map marker / center
     if (gmap) {
       const position = { lat: lat.value, lng: lng.value }
       gmap.setCenter(position)
@@ -326,7 +400,11 @@ async function useMyLocation() {
         gmarker.setPosition(position)
       } else {
         const win = window as any
-        gmarker = new win.google.maps.Marker({ position, map: gmap, draggable: true })
+        gmarker = new win.google.maps.Marker({
+          position,
+          map: gmap,
+          draggable: true,
+        })
         gmarker.addListener('dragend', (e: any) => {
           if (!e?.latLng) return
           lat.value = e.latLng.lat()
@@ -338,8 +416,14 @@ async function useMyLocation() {
 
     await updateAddressFromCoords()
   } catch (e: any) {
-    if (e === 'permission_denied' || e?.code === 1 || (e?.message && String(e.message).toLowerCase().includes('denied'))) {
-      geoError.value = 'Permiso de geolocalización denegado. Activa la ubicación en los ajustes del dispositivo o permite el permiso para la aplicación.'
+    if (
+      e === 'permission_denied' ||
+      e?.code === 1 ||
+      (e?.message &&
+        String(e.message).toLowerCase().includes('denied'))
+    ) {
+      geoError.value =
+        'Permiso de geolocalización denegado. Activa la ubicación en los ajustes del dispositivo o permite el permiso para la aplicación.'
     } else {
       geoError.value = e?.message ?? 'No fue posible obtener tu ubicación.'
     }
@@ -358,38 +442,45 @@ async function pay() {
     paying.value = true
     err.value = ''
     if (!firstName.value.trim()) throw new Error('Ingresa tu nombre.')
-    if (!secondName.value.trim()) throw new Error('Ingresa tu segundo nombre o apellido.')
+    if (!secondName.value.trim()) {
+      throw new Error('Ingresa tu segundo nombre o apellido.')
+    }
     if (!emailOk.value) throw new Error('Email inválido.')
-    if (!phoneOk.value) throw new Error('El teléfono debe tener 10 dígitos.')
     if (!items.value.length) throw new Error('Tu carrito está vacío.')
     if (!cardOk.value) throw new Error('Datos de tarjeta inválidos.')
 
-    // si por alguna razón no hay dirección aún, intentamos generarla
     if (!address.value) {
       await updateAddressFromCoords()
     }
 
-    // revalidar disponibilidad
     const issues = await validateAvailability(items.value)
     if (issues.length) {
       const msg = issues
-        .map((i) => {
-          const kind = i.kind === 'product' ? 'Producto' : i.kind === 'addition' ? 'Adición' : 'Bebida'
+        .map(i => {
+          const kind =
+            i.kind === 'product'
+              ? 'Producto'
+              : i.kind === 'addition'
+              ? 'Adición'
+              : 'Bebida'
           return `• ${kind}: ${i.name ?? i.id} no está disponible`
         })
         .join('\n')
       throw new Error(`No pudimos confirmar:\n${msg}`)
     }
 
-    // simular pago / procesar
-    await new Promise((r) => setTimeout(r, 800))
+    await new Promise(r => setTimeout(r, 800))
 
     const payloadItems = items.value.map((it: any) => ({
       productId: it.productId,
       basePrice: it.basePrice,
       qty: it.qty,
-      addition: it.addition ? { id: it.addition.id, name: it.addition.name, price: it.addition.price } : null,
-      drink: it.drink ? { id: it.drink.id, name: it.drink.name, price: it.drink.price } : null
+      addition: it.addition
+        ? { id: it.addition.id, name: it.addition.name, price: it.addition.price }
+        : null,
+      drink: it.drink
+        ? { id: it.drink.id, name: it.drink.name, price: it.drink.price }
+        : null,
     }))
 
     await createOrder({
@@ -399,12 +490,11 @@ async function pay() {
       lat: lat.value ?? null,
       lng: lng.value ?? null,
       items: payloadItems,
-      total: total.value
+      total: total.value,
     })
 
     toastOpen.value = true
     clear()
-    // After successful payment, return user to main tab (tab1)
     router.replace('/tabs/tab1')
   } catch (e: any) {
     err.value = e?.message ?? 'No fue posible procesar el pago.'
@@ -436,7 +526,6 @@ async function pay() {
   font-size: 0.9rem;
 }
 
-/* ====== resto igual ====== */
 .mt {
   margin-top: 10px;
 }
@@ -500,7 +589,8 @@ async function pay() {
 
 .method-card.selected {
   border-color: var(--ion-color-primary);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ion-color-primary) 20%, transparent);
+  box-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--ion-color-primary) 20%, transparent);
 }
 
 @media (max-width: 390px) {

@@ -13,7 +13,10 @@
         <div class="info">
           <h2 class="name">
             {{ displayName }}
-            <ion-icon class="chev" :icon="showEditor ? chevronUpOutline : chevronDownOutline" />
+            <ion-icon
+              class="chev"
+              :icon="showEditor ? chevronUpOutline : chevronDownOutline"
+            />
           </h2>
           <p class="email">{{ profile.email || authEmail || '—' }}</p>
         </div>
@@ -26,17 +29,28 @@
         </ion-card-header>
         <ion-card-content>
           <ion-item>
-            <ion-input v-model="form.first_name" label="Nombre" label-placement="floating" />
+            <ion-input
+              v-model="form.first_name"
+              label="Nombre"
+              label-placement="floating"
+            />
           </ion-item>
           <ion-item>
-            <ion-input v-model="form.last_name" label="Apellido" label-placement="floating" />
+            <ion-input
+              v-model="form.last_name"
+              label="Apellido"
+              label-placement="floating"
+            />
           </ion-item>
+
+          <!-- Email solo lectura -->
           <ion-item>
-            <ion-input v-model="form.email" type="email" inputmode="email" label="Correo" label-placement="floating" />
-          </ion-item>
-          <ion-item>
-            <ion-input v-model="form.phone" type="tel" inputmode="numeric" :maxlength="10" label="Teléfono"
-              label-placement="floating" />
+            <ion-input
+              :value="profile.email || authEmail || ''"
+              label="Correo"
+              label-placement="floating"
+              readonly
+            />
           </ion-item>
 
           <div class="row mt">
@@ -44,7 +58,12 @@
               <ion-spinner v-if="saving" name="dots" />
               <span v-else>Guardar cambios</span>
             </ion-button>
-            <ion-button color="danger" fill="outline" :disabled="saving" @click="logout">
+            <ion-button
+              color="danger"
+              fill="outline"
+              :disabled="saving"
+              @click="logout"
+            >
               Cerrar sesión
             </ion-button>
           </div>
@@ -90,7 +109,10 @@
                   </p>
 
                   <!-- Adición -->
-                  <p v-if="itemsSummary[o.id]?.addition_name" class="line">
+                  <p
+                    v-if="itemsSummary[o.id]?.addition_name"
+                    class="line"
+                  >
                     Adición: {{ itemsSummary[o.id]!.addition_name }}
                   </p>
 
@@ -117,8 +139,13 @@
       </section>
     </ion-content>
 
-    <ion-toast :is-open="toastOpen" message="Perfil actualizado" duration="1500" color="success"
-      @didDismiss="toastOpen = false" />
+    <ion-toast
+      :is-open="toastOpen"
+      message="Perfil actualizado"
+      duration="1500"
+      color="success"
+      @didDismiss="toastOpen = false"
+    />
   </ion-page>
 </template>
 
@@ -173,19 +200,16 @@ const profile = reactive<{
   first_name?: string
   last_name?: string
   email?: string
-  phone?: string
 }>({})
 
 const form = reactive<{
   first_name: string
   last_name: string
   email: string
-  phone: string
 }>({
   first_name: '',
   last_name: '',
   email: '',
-  phone: '',
 })
 
 const displayName = computed(
@@ -206,6 +230,10 @@ const err = ref('')
 const ok = ref('')
 const toastOpen = ref(false)
 
+/**
+ * Carga el perfil del usuario y, si los nombres están vacíos,
+ * los completa con el último pedido en la tabla orders.
+ */
 async function loadProfile() {
   err.value = ''
   const { data: ures, error: uerr } = await supabase.auth.getUser()
@@ -213,31 +241,49 @@ async function loadProfile() {
     router.replace('/home')
     return
   }
+
   userId.value = ures.user.id
   authEmail.value = ures.user.email ?? null
 
+  // 1) Perfil principal
   const { data, error } = await supabase
     .from('profiles')
-    .select('first_name, last_name, email, phone')
+    .select('first_name, last_name, email')
     .eq('id', userId.value)
     .maybeSingle()
 
-  if (error) {
-    Object.assign(profile, {
-      first_name: '',
-      last_name: '',
-      email: authEmail.value ?? '',
-      phone: '',
-    })
-  } else {
-    Object.assign(profile, data ?? {})
-    if (!profile.email) profile.email = authEmail.value ?? ''
+  Object.assign(profile, {
+    first_name: data?.first_name ?? '',
+    last_name: data?.last_name ?? '',
+    email: data?.email ?? authEmail.value ?? '',
+  })
+
+  // 2) Completar desde el último pedido si faltan nombres
+  try {
+    const { data: lastOrder } = await supabase
+      .from('orders')
+      .select('first_name, last_name')
+      .eq('client_id', userId.value)
+      .order('id', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (lastOrder) {
+      if (!profile.first_name && lastOrder.first_name) {
+        profile.first_name = lastOrder.first_name
+      }
+      if (!profile.last_name && lastOrder.last_name) {
+        profile.last_name = lastOrder.last_name
+      }
+    }
+  } catch (e) {
+    console.warn('No se pudo obtener nombres del último pedido', e)
   }
 
+  // 3) Seed del formulario
   form.first_name = profile.first_name ?? ''
   form.last_name = profile.last_name ?? ''
   form.email = profile.email ?? authEmail.value ?? ''
-  form.phone = profile.phone ?? ''
 }
 
 async function saveProfile() {
@@ -246,10 +292,9 @@ async function saveProfile() {
     ok.value = ''
     if (!userId.value) return
 
-    if (!/\S+@\S+\.\S+/.test(form.email.trim()))
+    if (!/\S+@\S+\.\S+/.test(form.email.trim())) {
       throw new Error('Correo inválido.')
-    if (form.phone && !/^\d{7,10}$/.test(form.phone))
-      throw new Error('Teléfono inválido.')
+    }
 
     saving.value = true
 
@@ -258,14 +303,12 @@ async function saveProfile() {
       first_name: form.first_name.trim(),
       last_name: form.last_name.trim(),
       email: form.email.trim(),
-      phone: form.phone.trim(),
     })
 
     const payload = {
       first_name: form.first_name.trim(),
       last_name: form.last_name.trim(),
       email: form.email.trim(),
-      phone: form.phone.trim(),
     }
 
     Object.assign(profile, payload)

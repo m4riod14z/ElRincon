@@ -58,8 +58,7 @@
 
         <!-- Términos -->
         <ion-item lines="none" class="terms-item">
-          <ion-checkbox id="termsCb" slot="start" :checked="acceptTerms"
-            @ionChange="acceptTerms = $event.detail.checked" />
+          <ion-checkbox id="termsCb" slot="start" v-model="acceptTerms" />
           <ion-label for="termsCb" class="terms-label">
             Acepto los
             <a href="#" @click.prevent="openTerms">Términos y Condiciones</a>
@@ -243,10 +242,30 @@ async function onContinue() {
 
     // Manejo explícito del 422 (usuario ya registrado)
     if (signErr) {
+      console.error('signUp error detail:', signErr)
       // Manejo explícito del error 422 (correo ya registrado)
       if ((signErr as any).status === 422) {
         throw new Error('Este correo ya está registrado. Usa otro correo o inicia sesión.');
       }
+
+      // Fallback para 500 (Internal Server Error): intentar enviar OTP directamente
+      // Algunas instalaciones devuelven 500 en /auth/v1/signup por fallos internos (p. ej. SMTP).
+      // Intentamos continuar enviando un OTP para que el flujo de registro no se bloquee.
+      if ((signErr as any).status === 500) {
+        try {
+          const { error: otpSendErr } = await supabase.auth.signInWithOtp({
+            email: email.value.trim(),
+            options: { shouldCreateUser: true }
+          })
+          if (otpSendErr) throw otpSendErr
+          openOtp()
+          return
+        } catch (e) {
+          // si el fallback falla, relanzamos el error original
+          throw signErr
+        }
+      }
+
       throw signErr
     }
 

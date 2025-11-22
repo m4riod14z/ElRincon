@@ -6,6 +6,7 @@ import { IonicVue } from '@ionic/vue'
 import { supabase } from '@/services/SupabaseClient'
 import { App as CapacitorApp } from '@capacitor/app'
 import { Capacitor } from '@capacitor/core'
+import { StatusBar } from '@capacitor/status-bar'
 import { ensureProfileRow, clearCachedUserRole } from '@/controllers/ProfileController'
 
 import '@ionic/vue/css/core.css'
@@ -24,7 +25,9 @@ import './theme/variables.css'
 const app = createApp(App).use(IonicVue).use(router)
 
 const go = (path: string) => {
-  if (router.currentRoute.value.path !== path) router.replace(path)
+  if (router.currentRoute.value.path !== path) {
+    router.replace(path)
+  }
 }
 
 supabase.auth.onAuthStateChange(async (event, session) => {
@@ -32,17 +35,27 @@ supabase.auth.onAuthStateChange(async (event, session) => {
 
   if (event === 'SIGNED_IN' && session) {
     if (otpPending) return
+
     clearCachedUserRole()
     clearCachedUserRole()
-    // Only navigate to tabs after sign-in when user is on auth or entry pages.
-    // If the user is currently on another page inside the app (e.g., payment), don't force navigation.
+
+    // Solo redirige automáticamente si el usuario está en páginas de entrada/auth
     try {
       const curr = router.currentRoute.value.path
-      if (curr === '/' || curr === '/home' || curr === '/login' || curr === '/register' || curr.startsWith('/auth')) {
+      const isEntryRoute =
+        curr === '/' ||
+        curr === '/home' ||
+        curr === '/login' ||
+        curr === '/register' ||
+        curr.startsWith('/auth')
+
+      if (isEntryRoute) {
         return go('/tabs/tab1')
       }
-    } catch (err) {
-      // fallback to safe navigation
+      // si está en otra parte de la app, NO lo movemos
+      return
+    } catch {
+      // fallback seguro
       return go('/tabs/tab1')
     }
   }
@@ -55,21 +68,31 @@ supabase.auth.onAuthStateChange(async (event, session) => {
   }
 })
 
-// Ensure we remove focus from any active element before navigating
+// Quitar foco de cualquier input antes de cambiar de ruta
 router.beforeEach((to, from, next) => {
-  try { (document.activeElement as HTMLElement | null)?.blur(); } catch {}
+  try {
+    (document.activeElement as HTMLElement | null)?.blur()
+  } catch {
+    // ignore
+  }
   next()
 })
 
 router.isReady().then(() => app.mount('#app'))
 
-// Deep link handler for Supabase OAuth on native platforms
+// ========= Nativo (Android / iOS) =========
 if (Capacitor.isNativePlatform()) {
+  // Evita que la status bar se superponga al contenido
+  StatusBar.setOverlaysWebView({ overlay: false }).catch(() => {
+    // si falla, simplemente seguimos
+  })
+
+  // Deep link handler para Supabase OAuth
   CapacitorApp.addListener('appUrlOpen', async (event) => {
     const url = event?.url || ''
     if (url.startsWith('io.ionic.starter://auth/callback')) {
       try {
-        // Prefer PKCE auth code from query string
+        // Preferir PKCE auth code de la query string
         let exchanged = false
         try {
           const parsed = new URL(url)
@@ -79,19 +102,25 @@ if (Capacitor.isNativePlatform()) {
             exchanged = true
           }
         } catch {
-          // Ignore malformed callback URLs
+          // URL mal formada -> ignoramos
         }
-        // Fallback: some SDK versions accept the full callback URL string
+
+        // Fallback: pasar la URL completa
         if (!exchanged) {
           await supabase.auth.exchangeCodeForSession(url)
         }
-        // Crea perfil por defecto si no existe (rol 'client')
+
+        // Crear perfil por defecto si no existe (rol 'client')
         await ensureProfileRow()
         clearCachedUserRole()
         clearCachedUserRole()
-        try { localStorage.removeItem('otp_pending') } catch {
-          // Ignore storage failures
+
+        try {
+          localStorage.removeItem('otp_pending')
+        } catch {
+          // ignore storage errors
         }
+
         go('/tabs/tab1')
       } catch (err) {
         console.error('OAuth deep link error:', err)
@@ -99,5 +128,3 @@ if (Capacitor.isNativePlatform()) {
     }
   })
 }
-
-

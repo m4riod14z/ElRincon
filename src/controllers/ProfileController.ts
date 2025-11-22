@@ -1,83 +1,97 @@
-import { supabase } from "@/services/SupabaseClient";
+// src/controllers/ProfileController.ts
+import { supabase } from '@/services/SupabaseClient'
 
-export type UserRole = 'client' | 'admin' | 'restaurant';
+export type UserRole = 'client' | 'admin' | 'restaurant'
 
 export async function getCurrentUserRole(): Promise<UserRole | null> {
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser()
 
-    if (authError || !user) {
-        throw new Error("No se encontró el usuario autenticado");
-    }
+  if (authError || !user) {
+    throw new Error('No se encontró el usuario autenticado')
+  }
 
-    const { data, error } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .single();
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .maybeSingle()
 
-    if (error) {
-        console.error("Error obteniendo rol:", error.message);
-        return null;
-    }
+  if (error) {
+    console.error('Error obteniendo rol:', error.message)
+    return null
+  }
 
-    return data?.role as UserRole || null;
+  return (data?.role as UserRole) || null
 }
 
-let cachedRole: UserRole | null | undefined;
-let rolePromise: Promise<UserRole | null> | null = null;
+let cachedRole: UserRole | null | undefined
+let rolePromise: Promise<UserRole | null> | null = null
 
 export function clearCachedUserRole() {
-    cachedRole = undefined;
+  cachedRole = undefined
 }
 
-export async function getCachedUserRole(forceRefresh = false): Promise<UserRole | null> {
-    if (!forceRefresh && cachedRole !== undefined) return cachedRole;
-    if (!forceRefresh && rolePromise) return rolePromise;
+export async function getCachedUserRole(
+  forceRefresh = false,
+): Promise<UserRole | null> {
+  if (!forceRefresh && cachedRole !== undefined) return cachedRole
+  if (!forceRefresh && rolePromise) return rolePromise
 
-    rolePromise = getCurrentUserRole()
-        .then(role => {
-            cachedRole = role;
-            return role;
-        })
-        .catch(err => {
-            cachedRole = undefined;
-            throw err;
-        })
-        .finally(() => {
-            rolePromise = null;
-        });
+  rolePromise = getCurrentUserRole()
+    .then(role => {
+      cachedRole = role
+      return role
+    })
+    .catch(err => {
+      cachedRole = undefined
+      throw err
+    })
+    .finally(() => {
+      rolePromise = null
+    })
 
-    return rolePromise;
+  return rolePromise
 }
 
+// 👇 phone ahora es opcional
 export async function createOrUpdateProfile(payload: {
-    id: string;
-    first_name: string;
-    last_name: string;
-    email: string;
-    phone: string;
+  id: string
+  first_name: string
+  last_name: string
+  email: string
+  phone?: string
 }) {
-    // Asegurarse de preservar el rol existente o usar 'client' como valor por defecto
-    const { data: existing } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", payload.id)
-        .single();
+  // Asegurarse de preservar el rol existente o usar 'client' como valor por defecto
+  const { data: existing } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', payload.id)
+    .maybeSingle()
 
-    const role = existing?.role || 'client';
+  const role = (existing as any)?.role || 'client'
 
-    const { error } = await supabase
-        .from("profiles")
-        .upsert({
-            ...payload,
-            role
-        }, {
-            onConflict: 'id'
-        });
+  const phoneValue = payload.phone?.trim?.() ?? ''
 
-    if (error) {
-        throw error;
-    }
+  const { error } = await supabase.from('profiles').upsert(
+    {
+      id: payload.id,
+      first_name: payload.first_name,
+      last_name: payload.last_name,
+      email: payload.email,
+      phone: phoneValue,
+      role,
+    },
+    {
+      onConflict: 'id',
+    },
+  )
+
+  if (error) {
+    throw error
+  }
 }
 
 /**
@@ -85,27 +99,27 @@ export async function createOrUpdateProfile(payload: {
  * Si no existe, crea una con rol 'client' por defecto.
  */
 export async function ensureProfileRow() {
-    const { data: ures, error: uerr } = await supabase.auth.getUser();
-    if (uerr || !ures.user) return;
-    const user = ures.user;
+  const { data: ures, error: uerr } = await supabase.auth.getUser()
+  if (uerr || !ures.user) return
+  const user = ures.user
 
-    const { data: existing } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('id', user.id)
-        .maybeSingle();
+  const { data: existing } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('id', user.id)
+    .maybeSingle()
 
-    if (!existing) {
-        await supabase
-            .from('profiles')
-            .upsert({
-                id: user.id,
-                first_name: '',
-                last_name: '',
-                email: user.email ?? '',
-                phone: '',
-                role: 'client'
-            }, { onConflict: 'id' })
-    }
+  if (!existing) {
+    await supabase.from('profiles').upsert(
+      {
+        id: user.id,
+        first_name: '',
+        last_name: '',
+        email: user.email ?? '',
+        phone: '',
+        role: 'client',
+      },
+      { onConflict: 'id' },
+    )
+  }
 }
-
