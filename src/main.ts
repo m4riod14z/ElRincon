@@ -80,6 +80,36 @@ router.beforeEach((to, from, next) => {
 
 router.isReady().then(() => app.mount('#app'))
 
+// Manejar posible OAuth redirect en web (PKCE / auth code flow)
+// Si el proveedor redirige con ?code=... intercambiamos el código por sesión.
+if (!Capacitor.isNativePlatform()) {
+  try {
+    const url = window.location.href
+    const parsed = new URL(url)
+    const code = parsed.searchParams.get('code')
+    if (code) {
+      ;(async () => {
+        try {
+          await supabase.auth.exchangeCodeForSession(code)
+          // Asegurar fila de profile y limpiar cache/otp
+          await ensureProfileRow()
+          clearCachedUserRole()
+          clearCachedUserRole()
+          try { localStorage.removeItem('otp_pending') } catch {}
+          // Redirigir al main
+          if (router.currentRoute.value.path === '/' || router.currentRoute.value.path === '/home' || router.currentRoute.value.path === '/login' || router.currentRoute.value.path === '/register') {
+            router.replace('/tabs/tab1')
+          }
+        } catch (err) {
+          console.error('OAuth web exchange error:', err)
+        }
+      })()
+    }
+  } catch (e) {
+    // ignore malformed URL
+  }
+}
+
 // ========= Nativo (Android / iOS) =========
 if (Capacitor.isNativePlatform()) {
   // Evita que la status bar se superponga al contenido

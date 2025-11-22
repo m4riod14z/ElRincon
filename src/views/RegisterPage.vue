@@ -266,6 +266,23 @@ async function onContinue() {
         }
       }
 
+      // Fallback específico: algunos proyectos retornan un mensaje de DB
+      // como "Database error saving new user" aunque no sea 500. Intentar
+      // enviar OTP en ese caso también para no bloquear al usuario.
+      if ((signErr as any).message && (signErr as any).message.includes('Database error saving new user')) {
+        try {
+          const { error: otpSendErr } = await supabase.auth.signInWithOtp({
+            email: email.value.trim(),
+            options: { shouldCreateUser: true }
+          })
+          if (otpSendErr) throw otpSendErr
+          openOtp()
+          return
+        } catch (e) {
+          throw signErr
+        }
+      }
+
       throw signErr
     }
 
