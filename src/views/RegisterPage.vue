@@ -12,7 +12,7 @@
     <ion-content class="ion-padding">
       <ion-list class="form">
         <ion-item class="field">
-          <ion-input ref="emailInput" type="email" v-model="email" label="Email" label-placement="stacked"
+          <ion-input ref="emailInput" type="email" v-model="email" label="Correo electrónico" label-placement="stacked"
             inputmode="email" autocomplete="email" required />
         </ion-item>
 
@@ -68,7 +68,7 @@
           <ion-checkbox id="termsCb" slot="start" v-model="acceptTerms" />
           <ion-label for="termsCb" class="terms-label">
             Acepto los
-            <a href="#" @click.prevent="openTerms">Términos y Condiciones</a>
+            <a href="#" @click.prevent.stop="openTerms">Términos y Condiciones</a>
           </ion-label>
         </ion-item>
       </ion-list>

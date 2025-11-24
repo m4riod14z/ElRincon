@@ -32,14 +32,20 @@ function subscribe() {
       if (ev === 'INSERT') {
         const row = payload.new as Order
         if (!orders.value.some(o => o.id === row.id)) orders.value.unshift(row)
+        // ensure Vue reactivity picks up the change
+        orders.value = orders.value.slice()
       } else if (ev === 'UPDATE') {
         const row = payload.new as Order
         const i = orders.value.findIndex(o => o.id === row.id)
         if (i >= 0) orders.value[i] = row
         else orders.value.unshift(row)
+        // force reactive update so computed lists and watchers run reliably
+        orders.value = orders.value.slice()
       } else if (ev === 'DELETE') {
         const row = payload.old as Order
         orders.value = orders.value.filter(o => o.id !== row.id)
+        // ensure reactivity
+        orders.value = orders.value.slice()
       }
     })
     .subscribe()
