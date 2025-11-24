@@ -17,7 +17,6 @@
         </ion-card-header>
 
         <ion-card-content>
-          <!-- ====== MINI MAPA (GOOGLE MAPS) ====== -->
           <div class="mapbox">
             <div id="payment-map" class="gmap"></div>
           </div>
@@ -29,12 +28,10 @@
             {{ geoError }}
           </ion-text>
 
-          <!-- Dirección calculada -->
           <ion-text v-if="address" class="addr">
             Dirección seleccionada: {{ address }}
           </ion-text>
 
-          <!-- ====== NOMBRES ====== -->
           <ion-item class="mt">
             <ion-input
               v-model="firstName"
@@ -45,23 +42,34 @@
           <ion-item>
             <ion-input
               v-model="secondName"
-              label="Segundo nombre / Apellido"
+              label="Apellido"
               label-placement="floating"
             />
           </ion-item>
 
-          <!-- ====== CONTACTO (solo email) ====== -->
           <ion-item>
             <ion-input
-              v-model="email"
+              :value="email"
               type="email"
               inputmode="email"
               label="Email"
               label-placement="floating"
+              readonly
             />
           </ion-item>
 
-          <!-- ====== MÉTODO: TARJETAS CON ICONO ====== -->
+          <ion-item>
+            <ion-input
+              v-model="phone"
+              type="tel"
+              inputmode="numeric"
+              pattern="[0-9]*"
+              :maxlength="10"
+              label="Teléfono"
+              label-placement="floating"
+            />
+          </ion-item>
+
           <div class="mt">
             <div class="methods-title">¿Prefieres otro método de pago?</div>
             <div class="methods-grid">
@@ -80,14 +88,13 @@
             </div>
           </div>
 
-          <!-- ====== CAMPOS DE TARJETA (SOLO SI TARJETA) ====== -->
           <template v-if="method === 'card'">
             <ion-item class="mt">
               <ion-input
                 v-model="cardNumber"
                 inputmode="numeric"
                 :maxlength="16"
-                label="Número de tarjeta (16)"
+                label="Número de tarjeta"
                 label-placement="floating"
               />
             </ion-item>
@@ -105,7 +112,7 @@
                 v-model="cardCvv"
                 inputmode="numeric"
                 :maxlength="3"
-                label="CVV (3)"
+                label="CVV"
                 label-placement="floating"
               />
             </ion-item>
@@ -165,7 +172,7 @@ import {
   IonSpinner,
   IonToast,
 } from '@ionic/vue'
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { Capacitor } from '@capacitor/core'
 import { Geolocation } from '@capacitor/geolocation'
 import { useRouter } from 'vue-router'
@@ -173,6 +180,7 @@ import { useCart } from '@/controllers/useCart'
 import { validateAvailability } from '@/services/AvailabilityService'
 import { createOrder } from '@/services/OrderService'
 import { supabase } from '@/services/SupabaseClient'
+import { isValidPhone } from '@/utils/validatorsRegister'
 
 const fmtCOP = (n: number) =>
   (n ?? 0).toLocaleString('es-CO', {
@@ -184,13 +192,12 @@ const fmtCOP = (n: number) =>
 const router = useRouter()
 const { items, total, clear } = useCart()
 
-// ===== formulario =====
 const firstName = ref('')
 const secondName = ref('')
 const email = ref('')
+const phone = ref('')
 const method = ref<'nequi' | 'bancolombia' | 'card'>('nequi')
 
-// imágenes
 const iconNequi = new URL('@/assets/images/nequi.png', import.meta.url).href
 const iconBancolombia = new URL(
   '@/assets/images/bancolombia.png',
@@ -208,7 +215,6 @@ const methodLabel = computed(
   () => methods.find(m => m.value === method.value)?.label ?? '',
 )
 
-// tarjeta
 const cardNumber = ref('')
 const cardExp = ref('')
 const cardCvv = ref('')
@@ -217,8 +223,8 @@ const paying = ref(false)
 const err = ref('')
 const toastOpen = ref(false)
 
-// ===== validaciones =====
 const emailOk = computed(() => /\S+@\S+\.\S+/.test(email.value.trim()))
+const phoneOk = computed(() => isValidPhone(phone.value))
 const cardOk = computed(() => {
   if (method.value !== 'card') return true
   const numOk = /^\d{16}$/.test(cardNumber.value)
@@ -227,7 +233,14 @@ const cardOk = computed(() => {
   return numOk && expOk && cvvOk
 })
 
-// ===== precarga desde perfil =====
+watch(
+  phone,
+  newVal => {
+    const cleaned = (newVal || '').replace(/\D/g, '').slice(0, 10)
+    if (cleaned !== newVal) phone.value = cleaned
+  },
+)
+
 async function prefillCustomerDetails() {
   try {
     const { data: ures } = await supabase.auth.getUser()
@@ -236,57 +249,42 @@ async function prefillCustomerDetails() {
 
     const fallbackEmail = user.email ?? ''
 
-    // === 1) PERFIL ===
     const { data: profile } = await supabase
       .from('profiles')
-      .select('first_name, last_name, email')
+      .select('first_name, last_name, email, phone')
       .eq('id', user.id)
       .maybeSingle()
 
     const firstP = profile?.first_name?.trim()
-    const lastP  = profile?.last_name?.trim()
+    const lastP = profile?.last_name?.trim()
     const emailP = (profile?.email || fallbackEmail).trim()
+    const phoneP = profile?.phone?.trim() ?? ''
 
-    // === 2) ÚLTIMA ORDEN DEL CLIENTE (usa client_id, NO user_id) ===
-    const { data: orders } = await supabase
-      .from('orders')
-      .select('first_name, last_name')
-      .eq('client_id', user.id)              // 👈 CORREGIDO
-      .order('id', { ascending: false })
-      .limit(1)
-
-    const lastOrder = orders?.[0] ?? null
-    const firstO = lastOrder?.first_name?.trim()
-    const lastO  = lastOrder?.last_name?.trim()
-
-    // === 3) PREFILL CAMPOS DEL FORM ===
     if (!firstName.value) {
-      firstName.value = firstP || firstO || ''
+      firstName.value = firstP || ''
     }
     if (!secondName.value) {
-      secondName.value = lastP || lastO || ''
+      secondName.value = lastP || ''
     }
     if (!email.value) {
       email.value = emailP || fallbackEmail || ''
     }
-    // teléfono ya no se usa
+    if (!phone.value) {
+      phone.value = phoneP
+    }
   } catch {
-    // silencioso
+    //evitar
   }
 }
 
-// ===== GOOGLE MAPS + GEOCODING =====
 const GOOGLE_MAPS_KEY = 'AIzaSyBWRwXzKtTw1eu9TCzNR-ycy3yL-mZw9As'
 
 let gmap: any = null
 let gmarker: any = null
 
-// coords por defecto (Medellín)
 const lat = ref<number>(6.25184)
 const lng = ref<number>(-75.56359)
 const geoError = ref('')
-
-// dirección legible obtenida por Geocoding
 const address = ref('')
 
 async function updateAddressFromCoords() {
@@ -370,13 +368,12 @@ async function useMyLocation() {
         throw new Error('La geolocalización no está disponible en este dispositivo.')
       }
       try {
-        // @ts-ignore
         const status = await (navigator as any).permissions?.query?.({
           name: 'geolocation',
         })
         if (status && status.state === 'denied') throw new Error('permission_denied')
       } catch {
-        // ignore
+    //evitar
       }
 
       await new Promise<void>((resolve, reject) => {
@@ -419,8 +416,7 @@ async function useMyLocation() {
     if (
       e === 'permission_denied' ||
       e?.code === 1 ||
-      (e?.message &&
-        String(e.message).toLowerCase().includes('denied'))
+      (e?.message && String(e.message).toLowerCase().includes('denied'))
     ) {
       geoError.value =
         'Permiso de geolocalización denegado. Activa la ubicación en los ajustes del dispositivo o permite el permiso para la aplicación.'
@@ -430,22 +426,23 @@ async function useMyLocation() {
   }
 }
 
-// ===== lifecycle =====
 onMounted(prefillCustomerDetails)
 onMounted(() => {
   initMap()
 })
 
-// ===== pagar =====
 async function pay() {
   try {
     paying.value = true
     err.value = ''
     if (!firstName.value.trim()) throw new Error('Ingresa tu nombre.')
     if (!secondName.value.trim()) {
-      throw new Error('Ingresa tu segundo nombre o apellido.')
+      throw new Error('Ingresa tu apellido.')
     }
     if (!emailOk.value) throw new Error('Email inválido.')
+    if (!phoneOk.value) {
+      throw new Error('El teléfono debe tener exactamente 10 dígitos numéricos.')
+    }
     if (!items.value.length) throw new Error('Tu carrito está vacío.')
     if (!cardOk.value) throw new Error('Datos de tarjeta inválidos.')
 
@@ -491,6 +488,7 @@ async function pay() {
       lng: lng.value ?? null,
       items: payloadItems,
       total: total.value,
+      phone: phone.value,
     })
 
     toastOpen.value = true

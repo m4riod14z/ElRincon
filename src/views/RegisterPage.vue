@@ -1,5 +1,4 @@
-﻿<!-- src/views/RegisterPage.vue -->
-<template>
+﻿<template>
   <ion-page>
     <ion-header>
       <ion-toolbar>
@@ -12,22 +11,32 @@
 
     <ion-content class="ion-padding">
       <ion-list class="form">
-        <!-- Email -->
         <ion-item class="field">
-        <ion-input ref="emailInput" type="email" v-model="email" label="Email" label-placement="stacked"
+          <ion-input ref="emailInput" type="email" v-model="email" label="Email" label-placement="stacked"
             inputmode="email" autocomplete="email" required />
         </ion-item>
 
-        <!-- Contraseña -->
         <ion-item class="field">
-          <ion-input :type="show1 ? 'text' : 'password'" v-model="password" label="Contraseña"
-            label-placement="stacked" autocomplete="new-password" required />
+          <ion-input v-model="firstName" label="Nombre" label-placement="stacked" required />
+        </ion-item>
+
+        <ion-item class="field">
+          <ion-input v-model="lastName" label="Apellido" label-placement="stacked" required />
+        </ion-item>
+
+        <ion-item class="field">
+          <ion-input v-model="phone" type="tel" inputmode="numeric" pattern="[0-9]*" :maxlength="10" label="Teléfono"
+            label-placement="stacked" autocomplete="tel" required />
+        </ion-item>
+
+        <ion-item class="field">
+          <ion-input :type="show1 ? 'text' : 'password'" v-model="password" label="Contraseña" label-placement="stacked"
+            autocomplete="new-password" required />
           <ion-button slot="end" fill="clear" size="small" @click="show1 = !show1">
             {{ show1 ? 'Ocultar' : 'Ver' }}
           </ion-button>
         </ion-item>
 
-        <!-- Indicadores de seguridad -->
         <div class="hints" aria-label="Requisitos de contrasena">
           <div>
             <span class="bullet-dot" :class="{ ok: passLenOk }"></span>
@@ -47,7 +56,6 @@
           </div>
         </div>
 
-        <!-- Confirmar Contraseña -->
         <ion-item class="field">
           <ion-input :type="show2 ? 'text' : 'password'" v-model="password2" label="Confirmar Contraseña"
             label-placement="stacked" autocomplete="new-password" required />
@@ -56,7 +64,6 @@
           </ion-button>
         </ion-item>
 
-        <!-- Términos -->
         <ion-item lines="none" class="terms-item">
           <ion-checkbox id="termsCb" slot="start" v-model="acceptTerms" />
           <ion-label for="termsCb" class="terms-label">
@@ -66,7 +73,6 @@
         </ion-item>
       </ion-list>
 
-      <!-- Botón de registro -->
       <ion-button expand="block" size="large" color="primary" class="btn-primary"
         :disabled="loading || !canContinue || otpOpen" @click="onContinue">
         <ion-spinner v-if="loading" name="dots" />
@@ -76,7 +82,6 @@
       <ion-text v-if="err" color="danger" class="err">{{ err }}</ion-text>
     </ion-content>
 
-    <!-- Modal de OTP -->
     <ion-modal :is-open="otpOpen" @did-dismiss="closeOtp">
       <ion-content class="ion-padding otp-modal">
         <div class="grabber"></div>
@@ -107,7 +112,6 @@
       </ion-content>
     </ion-modal>
 
-    <!-- Modal Términos -->
     <ion-modal :is-open="termsOpen" @did-dismiss="closeTerms">
       <ion-header>
         <ion-toolbar>
@@ -134,19 +138,44 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick } from 'vue'
+import { ref, computed, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/SupabaseClient'
 import {
-  IonPage, IonHeader, IonToolbar, IonButtons, IonBackButton, IonTitle,
-  IonContent, IonList, IonItem, IonInput, IonButton, IonText,
-  IonCheckbox, IonLabel, IonModal, IonSpinner
+  IonPage,
+  IonHeader,
+  IonToolbar,
+  IonButtons,
+  IonBackButton,
+  IonTitle,
+  IonContent,
+  IonList,
+  IonItem,
+  IonInput,
+  IonButton,
+  IonText,
+  IonCheckbox,
+  IonLabel,
+  IonModal,
+  IonSpinner,
 } from '@ionic/vue'
+
+import {
+  isValidEmail,
+  getPasswordChecks,
+  isValidName,
+  isValidPhone,
+} from '@/utils/validatorsRegister'
+
+import { createOrUpdateProfile } from '@/controllers/ProfileController'
 
 const router = useRouter()
 
-// Estado general
 const email = ref('')
+const firstName = ref('')
+const lastName = ref('')
+const phone = ref('')
+
 const password = ref('')
 const password2 = ref('')
 const acceptTerms = ref(false)
@@ -156,22 +185,35 @@ const loading = ref(false)
 const err = ref('')
 const emailInput = ref<any>(null)
 
-// Validaciones
-const emailOk = computed(() => /\S+@\S+\.\S+/.test(email.value.trim()))
-const passLenOk = computed(() => password.value.length >= 8)
-const passUpOk = computed(() => /[A-Z]/.test(password.value))
-const passLoOk = computed(() => /[a-z]/.test(password.value))
-const passSpOk = computed(() => /[^A-Za-z0-9]/.test(password.value))
-const passValid = computed(() => passLenOk.value && passUpOk.value && passLoOk.value && passSpOk.value)
+watch(phone, newVal => {
+  const cleaned = (newVal || '').replace(/\D/g, '').slice(0, 10)
+  if (cleaned !== newVal) phone.value = cleaned
+})
 
-const canContinue = computed(() =>
-  emailOk.value &&
-  passValid.value &&
-  password.value === password2.value &&
-  !!acceptTerms.value
+const emailOk = computed(() => isValidEmail(email.value))
+
+const passwordChecks = computed(() => getPasswordChecks(password.value))
+const passLenOk = computed(() => passwordChecks.value.lenOk)
+const passUpOk = computed(() => passwordChecks.value.upOk)
+const passLoOk = computed(() => passwordChecks.value.loOk)
+const passSpOk = computed(() => passwordChecks.value.spOk)
+const passValid = computed(() => passwordChecks.value.valid)
+
+const nameOk = computed(() => isValidName(firstName.value))
+const lastNameOk = computed(() => isValidName(lastName.value))
+const phoneOk = computed(() => isValidPhone(phone.value))
+
+const canContinue = computed(
+  () =>
+    emailOk.value &&
+    nameOk.value &&
+    lastNameOk.value &&
+    phoneOk.value &&
+    passValid.value &&
+    password.value === password2.value &&
+    !!acceptTerms.value,
 )
 
-// OTP
 const OTP_LEN = 6
 const otpOpen = ref(false)
 const otpErr = ref('')
@@ -188,12 +230,10 @@ function focusBox(i: number) {
   nextTick(() => otpRefs.value?.[i]?.focus())
 }
 
-// 🔧 Fix: evitar error de nativeInput/setFocus
 function focusEmail() {
   nextTick(() => {
     const ion = emailInput.value
-    const inputEl: HTMLInputElement | null =
-      ion?.$el?.querySelector('input') ?? null
+    const inputEl: HTMLInputElement | null = ion?.$el?.querySelector('input') ?? null
     inputEl?.focus()
   })
 }
@@ -226,10 +266,10 @@ function closeOtp() {
   focusEmail()
 }
 
-// ========== Registro ==========
 async function onContinue() {
   if (!canContinue.value || loading.value || otpOpen.value) return
   err.value = ''
+
   try {
     loading.value = true
 
@@ -237,43 +277,25 @@ async function onContinue() {
 
     const { data, error: signErr } = await supabase.auth.signUp({
       email: email.value.trim(),
-      password: password.value
+      password: password.value,
     })
 
-    // Manejo explícito del 422 (usuario ya registrado)
     if (signErr) {
       console.error('signUp error detail:', signErr)
-      // Manejo explícito del error 422 (correo ya registrado)
+
       if ((signErr as any).status === 422) {
-        throw new Error('Este correo ya está registrado. Usa otro correo o inicia sesión.');
+        throw new Error('Este correo ya está registrado. Usa otro correo o inicia sesión.')
       }
 
-      // Fallback para 500 (Internal Server Error): intentar enviar OTP directamente
-      // Algunas instalaciones devuelven 500 en /auth/v1/signup por fallos internos (p. ej. SMTP).
-      // Intentamos continuar enviando un OTP para que el flujo de registro no se bloquee.
-      if ((signErr as any).status === 500) {
+      if (
+        (signErr as any).status === 500 ||
+        ((signErr as any).message &&
+          (signErr as any).message.includes('Database error saving new user'))
+      ) {
         try {
           const { error: otpSendErr } = await supabase.auth.signInWithOtp({
             email: email.value.trim(),
-            options: { shouldCreateUser: true }
-          })
-          if (otpSendErr) throw otpSendErr
-          openOtp()
-          return
-        } catch (e) {
-          // si el fallback falla, relanzamos el error original
-          throw signErr
-        }
-      }
-
-      // Fallback específico: algunos proyectos retornan un mensaje de DB
-      // como "Database error saving new user" aunque no sea 500. Intentar
-      // enviar OTP en ese caso también para no bloquear al usuario.
-      if ((signErr as any).message && (signErr as any).message.includes('Database error saving new user')) {
-        try {
-          const { error: otpSendErr } = await supabase.auth.signInWithOtp({
-            email: email.value.trim(),
-            options: { shouldCreateUser: true }
+            options: { shouldCreateUser: true },
           })
           if (otpSendErr) throw otpSendErr
           openOtp()
@@ -286,15 +308,13 @@ async function onContinue() {
       throw signErr
     }
 
-    // Si por alguna razón viene sesión, la cerramos para obligar a verificar por OTP
     if (data?.session) {
       await supabase.auth.signOut()
     }
 
-    // Enviar OTP de verificación al mismo correo
     const { error: otpSendErr } = await supabase.auth.signInWithOtp({
       email: email.value.trim(),
-      options: { shouldCreateUser: false }
+      options: { shouldCreateUser: false },
     })
     if (otpSendErr) throw otpSendErr
 
@@ -307,7 +327,6 @@ async function onContinue() {
   }
 }
 
-// ========== Verificar OTP ==========
 async function verifyOtpClick() {
   otpErr.value = ''
   const token = codeBoxes.value.join('')
@@ -320,9 +339,20 @@ async function verifyOtpClick() {
     const { error } = await supabase.auth.verifyOtp({
       email: email.value.trim(),
       token,
-      type: 'email'
+      type: 'email',
     })
     if (error) throw error
+
+    const { data: ures, error: uerr } = await supabase.auth.getUser()
+    if (!uerr && ures.user) {
+      await createOrUpdateProfile({
+        id: ures.user.id,
+        first_name: firstName.value.trim(),
+        last_name: lastName.value.trim(),
+        email: email.value.trim(),
+        phone: phone.value.trim(),
+      })
+    }
 
     localStorage.removeItem('otp_pending')
     closeOtp()
@@ -334,14 +364,13 @@ async function verifyOtpClick() {
   }
 }
 
-// ========== Reenviar OTP ==========
 async function resendOtpClick() {
   if (resendLeft.value > 0) return
   try {
     resending.value = true
     const { error } = await supabase.auth.signInWithOtp({
       email: email.value.trim(),
-      options: { shouldCreateUser: false }
+      options: { shouldCreateUser: false },
     })
     if (error) throw error
     startResendTimer()
@@ -352,7 +381,6 @@ async function resendOtpClick() {
   }
 }
 
-// ========== Timer ==========
 let timer: number | undefined
 function startResendTimer() {
   clearTimer()
@@ -449,7 +477,6 @@ function closeTerms() {
   margin-top: 10px;
 }
 
-/* OTP modal */
 .otp-modal {
   display: flex;
   flex-direction: column;

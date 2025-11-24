@@ -1,4 +1,3 @@
-// src/controllers/ProfileController.ts
 import { supabase } from '@/services/SupabaseClient'
 
 export type UserRole = 'client' | 'admin' | 'restaurant'
@@ -56,7 +55,6 @@ export async function getCachedUserRole(
   return rolePromise
 }
 
-// 👇 phone ahora es opcional
 export async function createOrUpdateProfile(payload: {
   id: string
   first_name: string
@@ -64,15 +62,13 @@ export async function createOrUpdateProfile(payload: {
   email: string
   phone?: string
 }) {
-  // Asegurarse de preservar el rol existente o usar 'client' como valor por defecto
   const { data: existing } = await supabase
     .from('profiles')
     .select('role')
     .eq('id', payload.id)
     .maybeSingle()
 
-  const role = (existing as any)?.role || 'client'
-
+  const role = (existing?.role as UserRole | undefined) ?? 'client'
   const phoneValue = payload.phone?.trim?.() ?? ''
 
   const { error } = await supabase.from('profiles').upsert(
@@ -94,10 +90,6 @@ export async function createOrUpdateProfile(payload: {
   }
 }
 
-/**
- * Asegura que exista una fila en `profiles` para el usuario autenticado.
- * Si no existe, crea una con rol 'client' por defecto.
- */
 export async function ensureProfileRow() {
   const { data: ures, error: uerr } = await supabase.auth.getUser()
   if (uerr || !ures.user) return

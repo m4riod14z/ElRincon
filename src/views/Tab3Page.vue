@@ -7,50 +7,36 @@
     </ion-header>
 
     <ion-content class="ion-padding view-fade-up">
-      <!-- HEADER PERFIL -->
       <div class="header" @click="toggleEditor">
         <div class="avatar">{{ initials }}</div>
         <div class="info">
           <h2 class="name">
             {{ displayName }}
-            <ion-icon
-              class="chev"
-              :icon="showEditor ? chevronUpOutline : chevronDownOutline"
-            />
+            <ion-icon class="chev" :icon="showEditor ? chevronUpOutline : chevronDownOutline" />
           </h2>
           <p class="email">{{ profile.email || authEmail || '—' }}</p>
+          <p class="email" v-if="profile.phone">{{ profile.phone }}</p>
         </div>
       </div>
 
-      <!-- EDITOR PERFIL -->
       <ion-card v-if="showEditor" class="editor-card">
         <ion-card-header>
           <ion-card-title>Datos personales</ion-card-title>
         </ion-card-header>
         <ion-card-content>
           <ion-item>
-            <ion-input
-              v-model="form.first_name"
-              label="Nombre"
-              label-placement="floating"
-            />
+            <ion-input v-model="form.first_name" label="Nombre" label-placement="floating" />
           </ion-item>
           <ion-item>
-            <ion-input
-              v-model="form.last_name"
-              label="Apellido"
-              label-placement="floating"
-            />
+            <ion-input v-model="form.last_name" label="Apellido" label-placement="floating" />
+          </ion-item>
+          <ion-item>
+            <ion-input v-model="form.phone" type="tel" inputmode="numeric" pattern="[0-9]*" :maxlength="10"
+              label="Teléfono" label-placement="floating" />
           </ion-item>
 
-          <!-- Email solo lectura -->
           <ion-item>
-            <ion-input
-              :value="profile.email || authEmail || ''"
-              label="Correo"
-              label-placement="floating"
-              readonly
-            />
+            <ion-input :value="profile.email || authEmail || ''" label="Correo" label-placement="floating" readonly />
           </ion-item>
 
           <div class="row mt">
@@ -58,12 +44,7 @@
               <ion-spinner v-if="saving" name="dots" />
               <span v-else>Guardar cambios</span>
             </ion-button>
-            <ion-button
-              color="danger"
-              fill="outline"
-              :disabled="saving"
-              @click="logout"
-            >
+            <ion-button color="danger" fill="outline" :disabled="saving" @click="logout">
               Cerrar sesión
             </ion-button>
           </div>
@@ -73,13 +54,12 @@
         </ion-card-content>
       </ion-card>
 
-      <!-- HISTORIAL DE PEDIDOS ENTREGADOS (SOLO ESTE CLIENTE) -->
+      <!-- HISTORIAL DE PEDIDOS ENTREGADOS -->
       <section class="section">
         <h3 class="section-title">Historial de pedidos entregados</h3>
 
         <ion-accordion-group expand="inset">
           <ion-accordion value="history">
-            <!-- Header del acordeón -->
             <ion-item slot="header" color="light">
               <ion-label>
                 {{
@@ -90,13 +70,11 @@
               </ion-label>
             </ion-item>
 
-            <!-- Contenido -->
             <ion-list slot="content" v-if="entregados.length">
               <ion-item v-for="o in entregados" :key="o.id" lines="full">
                 <ion-label>
                   <h3>Pedido #{{ o.id }}</h3>
 
-                  <!-- Producto principal -->
                   <p v-if="itemsSummary[o.id]" class="line">
                     {{ itemsSummary[o.id]!.qty }} x
                     {{
@@ -108,25 +86,23 @@
                     Detalle del pedido no disponible.
                   </p>
 
-                  <!-- Adición -->
-                  <p
-                    v-if="itemsSummary[o.id]?.addition_name"
-                    class="line"
-                  >
+                  <p v-if="itemsSummary[o.id]?.addition_name" class="line">
                     Adición: {{ itemsSummary[o.id]!.addition_name }}
                   </p>
 
-                  <!-- Bebida -->
                   <p v-if="itemsSummary[o.id]?.drink_name" class="line">
                     Bebida: {{ itemsSummary[o.id]!.drink_name }}
                   </p>
 
-                  <!-- Dirección -->
+                  <!-- NUEVO: línea de cliente, igual que en la vista del restaurante -->
+                  <p class="line">
+                    Cliente: {{ displayName }}
+                  </p>
+
                   <p class="line">
                     Dirección: {{ (o.address || '').trim() || 'No disponible' }}
                   </p>
 
-                  <!-- Total -->
                   <p class="line">
                     Total:
                     <strong>{{ fmtCOP(o.total) }}</strong>
@@ -139,13 +115,8 @@
       </section>
     </ion-content>
 
-    <ion-toast
-      :is-open="toastOpen"
-      message="Perfil actualizado"
-      duration="1500"
-      color="success"
-      @didDismiss="toastOpen = false"
-    />
+    <ion-toast :is-open="toastOpen" message="Perfil actualizado" duration="1500" color="success"
+      @didDismiss="toastOpen = false" />
   </ion-page>
 </template>
 
@@ -171,6 +142,7 @@ import {
   IonAccordionGroup,
   IonLabel,
   IonList,
+  onIonViewWillEnter,
 } from '@ionic/vue'
 import { chevronDownOutline, chevronUpOutline } from 'ionicons/icons'
 import { reactive, ref, computed, onMounted, watch } from 'vue'
@@ -181,13 +153,12 @@ import { createOrUpdateProfile } from '@/controllers/ProfileController'
 import { fmtCOP } from '@/utils/money'
 import type { OrderItemDetail } from '@/models/orders'
 import { fetchOrderItems } from '@/models/orders'
+import { isValidPhone } from '@/utils/validatorsRegister'
 
 const router = useRouter()
 
-// Pedidos del cliente actual
 const { entregados } = useOrders()
 
-// --- Perfil / encabezado ---
 const showEditor = ref(false)
 function toggleEditor() {
   showEditor.value = !showEditor.value
@@ -200,17 +171,28 @@ const profile = reactive<{
   first_name?: string
   last_name?: string
   email?: string
+  phone?: string
 }>({})
 
 const form = reactive<{
   first_name: string
   last_name: string
   email: string
+  phone: string
 }>({
   first_name: '',
   last_name: '',
   email: '',
+  phone: '',
 })
+
+watch(
+  () => form.phone,
+  newVal => {
+    const cleaned = (newVal || '').replace(/\D/g, '').slice(0, 10)
+    if (cleaned !== newVal) form.phone = cleaned
+  },
+)
 
 const displayName = computed(
   () =>
@@ -230,10 +212,6 @@ const err = ref('')
 const ok = ref('')
 const toastOpen = ref(false)
 
-/**
- * Carga el perfil del usuario y, si los nombres están vacíos,
- * los completa con el último pedido en la tabla orders.
- */
 async function loadProfile() {
   err.value = ''
   const { data: ures, error: uerr } = await supabase.auth.getUser()
@@ -245,10 +223,9 @@ async function loadProfile() {
   userId.value = ures.user.id
   authEmail.value = ures.user.email ?? null
 
-  // 1) Perfil principal
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from('profiles')
-    .select('first_name, last_name, email')
+    .select('first_name, last_name, email, phone')
     .eq('id', userId.value)
     .maybeSingle()
 
@@ -256,34 +233,13 @@ async function loadProfile() {
     first_name: data?.first_name ?? '',
     last_name: data?.last_name ?? '',
     email: data?.email ?? authEmail.value ?? '',
+    phone: data?.phone ?? '',
   })
 
-  // 2) Completar desde el último pedido si faltan nombres
-  try {
-    const { data: lastOrder } = await supabase
-      .from('orders')
-      .select('first_name, last_name')
-      .eq('client_id', userId.value)
-      .order('id', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-
-    if (lastOrder) {
-      if (!profile.first_name && lastOrder.first_name) {
-        profile.first_name = lastOrder.first_name
-      }
-      if (!profile.last_name && lastOrder.last_name) {
-        profile.last_name = lastOrder.last_name
-      }
-    }
-  } catch (e) {
-    console.warn('No se pudo obtener nombres del último pedido', e)
-  }
-
-  // 3) Seed del formulario
   form.first_name = profile.first_name ?? ''
   form.last_name = profile.last_name ?? ''
   form.email = profile.email ?? authEmail.value ?? ''
+  form.phone = profile.phone ?? ''
 }
 
 async function saveProfile() {
@@ -296,6 +252,10 @@ async function saveProfile() {
       throw new Error('Correo inválido.')
     }
 
+    if (!isValidPhone(form.phone)) {
+      throw new Error('El teléfono debe tener exactamente 10 dígitos numéricos.')
+    }
+
     saving.value = true
 
     await createOrUpdateProfile({
@@ -303,12 +263,14 @@ async function saveProfile() {
       first_name: form.first_name.trim(),
       last_name: form.last_name.trim(),
       email: form.email.trim(),
+      phone: form.phone.trim(),
     })
 
     const payload = {
       first_name: form.first_name.trim(),
       last_name: form.last_name.trim(),
       email: form.email.trim(),
+      phone: form.phone.trim(),
     }
 
     Object.assign(profile, payload)
@@ -327,7 +289,6 @@ async function logout() {
   router.replace('/home')
 }
 
-// ---- Resumen de ítems por pedido (primer producto del pedido) ----
 type ItemSummary = {
   product_id: number
   qty: number
@@ -373,6 +334,7 @@ watch(
 )
 
 onMounted(loadProfile)
+onIonViewWillEnter(loadProfile)
 </script>
 
 <style scoped>
@@ -453,7 +415,6 @@ onMounted(loadProfile)
   font-size: 14px;
 }
 
-/* Dark mode pequeños ajustes */
 @media (prefers-color-scheme: dark) {
   .header {
     background: transparent;

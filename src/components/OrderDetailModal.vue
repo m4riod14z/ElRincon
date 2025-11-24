@@ -20,9 +20,11 @@
                         <p class="detail-address" v-if="order.address">
                             Dirección: {{ order.address }}
                         </p>
+                        <p class="detail-phone" v-if="order.phone">
+                            Teléfono: {{ order.phone }}
+                        </p>
                     </header>
 
-                    <!-- Producto principal -->
                     <section v-if="order.items && order.items.length" class="detail-main">
                         <div class="detail-image">
                             <img :src="mainItem.product_image_url || '/Logo.png'"
@@ -45,7 +47,6 @@
                         </div>
                     </section>
 
-                    <!-- Otros ítems -->
                     <section v-if="order.items && order.items.length > 1" class="detail-items-list">
                         <h3 class="detail-section-title">Otros ítems</h3>
                         <ion-list>
@@ -136,12 +137,14 @@ function mapStatus(st: Order['status']) {
 }
 
 function onClose() {
-    try { (document.activeElement as HTMLElement | null)?.blur() } catch {}
+    const el = document.activeElement as HTMLElement | null
+    el?.blur()
     emit('close')
 }
 
 function onDidDismiss() {
-    try { (document.activeElement as HTMLElement | null)?.blur() } catch {}
+    const el = document.activeElement as HTMLElement | null
+    el?.blur()
     emit('close')
 }
 </script>
@@ -166,7 +169,8 @@ function onDidDismiss() {
 }
 
 .detail-client,
-.detail-address {
+.detail-address,
+.detail-phone {
     margin: 0;
     font-size: 14px;
     color: #111827;
@@ -234,17 +238,16 @@ function onDidDismiss() {
     font-weight: 600;
 }
 
-/* Force readable text colors inside the white card to avoid dark-mode inheritance issues */
 .detail-card,
 .detail-card * {
     color: #111827 !important;
 }
 
-/* But keep subtle texts slightly lighter */
 .detail-sub,
 .detail-client,
 .detail-address,
-.detail-totals {
+.detail-totals,
+.detail-phone {
     color: #374151 !important;
 }
 
@@ -258,7 +261,6 @@ function onDidDismiss() {
     }
 }
 
-/* Revert to dark styling when user prefers dark scheme so modal remains readable */
 @media (prefers-color-scheme: dark) {
     .detail-card {
         background: var(--ion-item-background, #111111) !important;
@@ -272,7 +274,8 @@ function onDidDismiss() {
     .detail-sub,
     .detail-client,
     .detail-address,
-    .detail-totals {
+    .detail-totals,
+    .detail-phone {
         color: var(--ion-color-medium) !important;
     }
     .detail-image {

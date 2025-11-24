@@ -100,7 +100,7 @@ const solicitados = computed(() =>
 )
 
 const enProgreso = computed(() =>
-    orders.value.filter((o) => ['ACCEPTED', 'DISPATCHED'].includes(o.status)),
+    orders.value.filter((o) => o.status === 'ACCEPTED'),
 )
 
 const enviados = computed(() =>

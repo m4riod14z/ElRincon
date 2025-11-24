@@ -270,7 +270,11 @@ async function confirmarPedido() {
     }
 
     // Fallback: show a simple alert so the user knows
-    try { alert('No se pudo ir a la pasarela de pago. Intenta nuevamente.') } catch {}
+    try { 
+      alert('No se pudo ir a la pasarela de pago. Intenta nuevamente.') 
+    } catch {
+      //evitar
+    }
   }
 }
 </script>

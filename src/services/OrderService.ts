@@ -1,5 +1,5 @@
-// src/services/OrderService.ts
 import { supabase } from '@/services/SupabaseClient'
+import { createOrUpdateProfile } from '@/controllers/ProfileController'
 
 type OrderItem = {
   productId: number
@@ -17,24 +17,32 @@ export async function createOrder(input: {
   lng: number | null
   total: number
   items: OrderItem[]
+  phone: string
 }) {
-  // 1) usuario actual
-  const { data: { user }, error: userErr } = await supabase.auth.getUser()
+  const {
+    data: { user },
+    error: userErr,
+  } = await supabase.auth.getUser()
   if (userErr) throw userErr
   if (!user) throw new Error('Debes iniciar sesión para pagar.')
 
-  // 2) insertar orden
+  await createOrUpdateProfile({
+    id: user.id,
+    first_name: input.firstName.trim(),
+    last_name: input.lastName.trim(),
+    email: user.email ?? '',
+    phone: input.phone.trim(),
+  })
+
   const { data, error } = await supabase
     .from('orders')
     .insert({
-      client_id: user.id,            // <--- IMPORTANTE
-      first_name: input.firstName,
-      last_name:  input.lastName,
-      address:    input.address,
-      lat:        input.lat,
-      lng:        input.lng,
-      total:      input.total,
-      status:     'NEW'
+      client_id: user.id,
+      address: input.address,
+      lat: input.lat,
+      lng: input.lng,
+      total: input.total,
+      status: 'NEW',
     })
     .select('id')
     .single()
@@ -42,17 +50,18 @@ export async function createOrder(input: {
   if (error) throw error
   const orderId = data.id
 
-  // 3) insertar items (si tienes tabla order_items)
   if (input.items?.length) {
     const rows = input.items.map(it => ({
-      order_id:  orderId,
+      order_id: orderId,
       product_id: it.productId,
-      qty:        it.qty,
+      qty: it.qty,
       unit_price: it.basePrice,
       addition_id: it.addition?.id ?? null,
-      drink_id:    it.drink?.id ?? null,
+      drink_id: it.drink?.id ?? null,
     }))
-    const { error: itemsErr } = await supabase.from('order_items').insert(rows)
+    const { error: itemsErr } = await supabase
+      .from('order_items')
+      .insert(rows)
     if (itemsErr) throw itemsErr
   }
 

@@ -13,18 +13,26 @@
         <ion-label>⚠️{{ error }}</ion-label>
       </ion-item>
 
-      <!-- Nuevos -->
       <section class="section">
         <div class="section-header">
           <h3>Nuevos</h3>
         </div>
         <ion-list>
-          <ion-item v-for="o in nuevos" :key="o.id" button detail @click="openDetail(o.id)">
+          <ion-item
+            v-for="o in nuevos"
+            :key="o.id"
+            button
+            detail
+            @click="openDetail(o.id)"
+          >
             <ion-label>
               <h2>Pedido #{{ o.id }}</h2>
               <p>Cliente: {{ fullName(o) }}</p>
               <p>{{ o.address }}</p>
-              <p>Total: <strong>{{ fmtCOP(o.total) }}</strong></p>
+              <p>
+                Total:
+                <strong>{{ fmtCOP(o.total) }}</strong>
+              </p>
             </ion-label>
             <ion-buttons slot="end">
               <ion-button color="primary" @click.stop="accept(o.id)">
@@ -36,18 +44,26 @@
         </ion-list>
       </section>
 
-      <!-- En preparación -->
       <section class="section">
         <div class="section-header">
           <h3>En preparación</h3>
         </div>
         <ion-list>
-          <ion-item v-for="o in enPreparacion" :key="o.id" button detail @click="openDetail(o.id)">
+          <ion-item
+            v-for="o in enPreparacion"
+            :key="o.id"
+            button
+            detail
+            @click="openDetail(o.id)"
+          >
             <ion-label>
               <h2>Pedido #{{ o.id }}</h2>
               <p>Cliente: {{ fullName(o) }}</p>
               <p>{{ o.address }}</p>
-              <p>Total: <strong>{{ fmtCOP(o.total) }}</strong></p>
+              <p>
+                Total:
+                <strong>{{ fmtCOP(o.total) }}</strong>
+              </p>
             </ion-label>
             <ion-buttons slot="end">
               <ion-button color="primary" @click.stop="dispatch(o.id)">
@@ -61,18 +77,26 @@
         </ion-list>
       </section>
 
-      <!-- Enviados -->
       <section class="section">
         <div class="section-header">
           <h3>Enviados</h3>
         </div>
         <ion-list>
-          <ion-item v-for="o in enviados" :key="o.id" button detail @click="openDetail(o.id)">
+          <ion-item
+            v-for="o in enviados"
+            :key="o.id"
+            button
+            detail
+            @click="openDetail(o.id)"
+          >
             <ion-label>
               <h2>Pedido #{{ o.id }}</h2>
               <p>Cliente: {{ fullName(o) }}</p>
               <p>{{ o.address }}</p>
-              <p>Total: <strong>{{ fmtCOP(o.total) }}</strong></p>
+              <p>
+                Total:
+                <strong>{{ fmtCOP(o.total) }}</strong>
+              </p>
             </ion-label>
             <ion-note slot="end" color="warning" class="sent-pill">
               {{ mapStatus(o.status) }}
@@ -82,7 +106,6 @@
         </ion-list>
       </section>
 
-      <!-- Detalle -->
       <ion-modal :is-open="detailOpen" @didDismiss="closeDetail">
         <ion-header>
           <ion-toolbar>
@@ -94,12 +117,10 @@
         </ion-header>
 
         <ion-content class="ion-padding">
-          <!-- Loading mientras llega Supabase -->
           <div v-if="detailLoading || !detail" class="detail-loading">
             <ion-spinner name="dots" />
           </div>
 
-          <!-- Contenido cuando ya tenemos detalle -->
           <template v-else>
             <div class="detail-card">
               <header class="detail-header">
@@ -107,24 +128,33 @@
                 <p class="detail-client">
                   Cliente: <strong>{{ fullName(detail) }}</strong>
                 </p>
+                <p class="detail-phone" v-if="detail.phone">
+                  Teléfono: {{ detail.phone }}
+                </p>
                 <p class="detail-address" v-if="detail.address">
                   Dirección: {{ detail.address }}
                 </p>
               </header>
 
-              <!-- Bloque principal con imagen del producto -->
-              <section v-if="detail.items && detail.items.length" class="detail-main">
+              <section
+                v-if="detail.items && detail.items.length"
+                class="detail-main"
+              >
                 <div class="detail-image">
-                  <img :src="detail.items[0].product_image_url || '/Logo.png'" :alt="detail.items[0].product_name ||
-                    ('Producto ' + detail.items[0].product_id)
-                    " />
+                  <img
+                    :src="detail.items[0].product_image_url || '/Logo.png'"
+                    :alt="
+                      detail.items[0].product_name ||
+                      'Producto ' + detail.items[0].product_id
+                    "
+                  />
                 </div>
                 <div class="detail-main-info">
                   <p class="detail-main-name">
                     {{ detail.items[0].qty }} x
                     {{
                       detail.items[0].product_name ||
-                      ('Producto ' + detail.items[0].product_id)
+                      'Producto ' + detail.items[0].product_id
                     }}
                   </p>
                   <p v-if="detail.items[0].addition_name" class="detail-sub">
@@ -139,15 +169,21 @@
                 </div>
               </section>
 
-              <!-- Otros items (si hay más de uno) -->
-              <section v-if="detail.items && detail.items.length > 1" class="detail-items-list">
+              <section
+                v-if="detail.items && detail.items.length > 1"
+                class="detail-items-list"
+              >
                 <h3 class="detail-section-title">Otros ítems</h3>
                 <ion-list>
-                  <ion-item lines="inset" v-for="(it, idx) in detail.items.slice(1)" :key="idx">
+                  <ion-item
+                    lines="inset"
+                    v-for="(it, idx) in detail.items.slice(1)"
+                    :key="idx"
+                  >
                     <ion-label>
                       <h3>
                         {{ it.qty }} x
-                        {{ it.product_name || ('Producto ' + it.product_id) }}
+                        {{ it.product_name || 'Producto ' + it.product_id }}
                       </h3>
                       <p v-if="it.addition_name">
                         Adición: {{ it.addition_name }}
@@ -195,7 +231,7 @@ import {
   IonToolbar,
   IonTitle,
   IonNote,
-  IonSpinner
+  IonSpinner,
 } from '@ionic/vue'
 import { ref, watch, onBeforeUnmount } from 'vue'
 import { fmtCOP } from '@/utils/money'
@@ -211,7 +247,7 @@ const {
   getOrderDetail,
   acceptOrder,
   dispatchOrder,
-  error
+  error,
 } = useRestaurantOrders()
 
 const detail = ref<OrderDetail | null>(null)
@@ -221,12 +257,11 @@ const detailLoading = ref(false)
 const nameCache = ref<Record<string, string>>({})
 const pendingNames = new Set<string>()
 
-// ----- RF-23: aviso de nuevos / entregados -----
 type AlertKind = 'new' | 'delivered' | null
 const alert = ref<{ visible: boolean; kind: AlertKind; message: string }>({
   visible: false,
   kind: null,
-  message: ''
+  message: '',
 })
 let alertTimer: ReturnType<typeof setTimeout> | null = null
 const ordersInitialized = ref(false)
@@ -258,36 +293,6 @@ onBeforeUnmount(() => {
   if (alertTimer) clearTimeout(alertTimer)
 })
 
-// watcher original para nombres
-watch(
-  orders,
-  list => {
-    if (!Array.isArray(list)) return
-    const updates: Record<string, string> = {}
-    const missing: string[] = []
-    list.forEach(o => {
-      const cid = o.client_id
-      if (!cid) return
-      const label = [o.first_name, o.last_name]
-        .filter(Boolean)
-        .join(' ')
-        .trim()
-      if (label) {
-        if (nameCache.value[cid] !== label) updates[cid] = label
-      } else if (!nameCache.value[cid] && !pendingNames.has(cid)) {
-        missing.push(cid)
-        pendingNames.add(cid)
-      }
-    })
-    if (Object.keys(updates).length) {
-      nameCache.value = { ...nameCache.value, ...updates }
-    }
-    if (missing.length) fetchClientNames(missing)
-  },
-  { immediate: true }
-)
-
-// watcher adicional para detectar nuevos / entregados
 watch(
   orders,
   (list, oldList) => {
@@ -320,23 +325,21 @@ watch(
       showAlert('delivered', deliveredCount)
     }
   },
-  { deep: false }
+  { deep: false },
 )
 
 async function fetchClientNames(ids: string[]) {
   try {
-    const { data, error } = await supabase
+    const { data, error: qErr } = await supabase
       .from('profiles')
       .select('id, first_name, last_name')
       .in('id', ids)
-    if (error) throw error
+    if (qErr) throw qErr
     const updates: Record<string, string> = {}
     for (const row of data ?? []) {
       const label =
-        [row.first_name, row.last_name]
-          .filter(Boolean)
-          .join(' ')
-          .trim() || row.id
+        [row.first_name, row.last_name].filter(Boolean).join(' ').trim() ||
+        row.id
       updates[row.id] = label
     }
     if (Object.keys(updates).length) {
@@ -352,9 +355,20 @@ async function fetchClientNames(ids: string[]) {
 function fullName(o: Partial<Order>) {
   const fn = (o.first_name || '').trim()
   const ln = (o.last_name || '').trim()
-  const label = [fn, ln].filter(Boolean).join(' ').trim()
-  if (label) return label
-  if (o.client_id) return nameCache.value[o.client_id] || o.client_id
+  const direct = [fn, ln].filter(Boolean).join(' ').trim()
+  if (direct) return direct
+
+  const cid = o.client_id
+  if (!cid) return 'Cliente'
+
+  const cached = nameCache.value[cid]
+  if (cached) return cached
+
+  if (!pendingNames.has(cid)) {
+    pendingNames.add(cid)
+    fetchClientNames([cid])
+  }
+
   return 'Cliente'
 }
 
@@ -381,7 +395,6 @@ function lineSubtotal(it: OrderItemDetail) {
 }
 
 async function openDetail(orderId: number) {
-  // Evitar que el foco se quede en el botón dentro del router-outlet
   const active = document.activeElement as HTMLElement | null
   active?.blur()
 
@@ -419,7 +432,6 @@ async function dispatch(orderId: number) {
   margin-bottom: 10px;
 }
 
-/* Aviso RF-23 */
 .orders-alert {
   margin-bottom: 10px;
   padding: 8px 12px;
@@ -489,8 +501,6 @@ p {
   font-size: 13px;
 }
 
-/* ===== Modal ===== */
-
 .detail-loading {
   display: flex;
   align-items: center;
@@ -498,7 +508,6 @@ p {
   min-height: 160px;
 }
 
-/* Light mode por defecto */
 .detail-card {
   background: var(--ion-item-background, #ffffff);
   border-radius: 16px;
@@ -518,7 +527,8 @@ p {
 }
 
 .detail-client,
-.detail-address {
+.detail-address,
+.detail-phone {
   margin: 0;
   font-size: 14px;
   color: var(--ion-color-medium);
@@ -586,7 +596,6 @@ p {
   font-weight: 600;
 }
 
-/* Dark mode: mantenemos tarjeta oscura */
 @media (prefers-color-scheme: dark) {
   .detail-card {
     background: #111111;

@@ -18,7 +18,6 @@
       </div>
 
       <template v-else>
-        <!-- SOLICITADOS -->
         <section class="section">
           <div class="section-header">
             <h3>Solicitados</h3>
@@ -47,7 +46,6 @@
           </ion-list>
         </section>
 
-        <!-- EN PROGRESO -->
         <section class="section">
           <div class="section-header">
             <h3>En preparación</h3>
@@ -79,7 +77,6 @@
           </ion-list>
         </section>
 
-        <!-- ENVIADOS -->
         <section class="section">
           <div class="section-header">
             <h3>Enviados</h3>
@@ -102,7 +99,6 @@
                 </p>
               </ion-label>
               <ion-buttons slot="end">
-                <!-- Botón corto y con mejor estilo -->
                 <ion-button
                   color="success"
                   size="small"
@@ -121,14 +117,12 @@
         </section>
       </template>
 
-      <!-- Modal de detalle reutilizable -->
       <OrderDetailModal
         :is-open="detailOpen"
         :order="detail"
         @close="closeDetail"
       />
 
-      <!-- Spinner sobre la modal mientras carga el detalle -->
       <div v-if="detailOpen && detailLoading" class="detail-overlay">
         <ion-spinner name="dots" />
       </div>
@@ -155,7 +149,7 @@ import { ref } from 'vue'
 import { fmtCOP } from '@/utils/money'
 import { useOrders } from '@/controllers/useOrders'
 import type { Order, OrderDetail } from '@/models/orders'
-import { fetchOrderItems } from '@/models/orders'
+import { fetchOrderDetail } from '@/models/orders'
 import OrderDetailModal from '@/components/OrderDetailModal.vue'
 
 const {
@@ -167,13 +161,11 @@ const {
   marcarEntregado,
 } = useOrders()
 
-// ---- Modal de detalle ----
 const detailOpen = ref(false)
 const detailLoading = ref(false)
 const detail = ref<OrderDetail | null>(null)
 
 async function openDetail(o: Order) {
-  // evitamos problemas de foco dentro de ion-router-outlet
   const active = document.activeElement as HTMLElement | null
   active?.blur()
 
@@ -182,11 +174,10 @@ async function openDetail(o: Order) {
   detail.value = null
 
   try {
-    const items = await fetchOrderItems(o.id)
-    detail.value = {
-      ...o,
-      items,
-    } as OrderDetail
+    const data = await fetchOrderDetail(o.id)
+    if (data) {
+      detail.value = data
+    }
   } catch (e) {
     console.error('Error cargando detalle de pedido', e)
   } finally {
@@ -200,7 +191,6 @@ function closeDetail() {
   detailLoading.value = false
 }
 
-// ---- Utilidades UI ----
 function mapStatus(st: Order['status']) {
   switch (st) {
     case 'NEW':
@@ -274,7 +264,6 @@ p {
   font-size: 13px;
 }
 
-/* Botón "Recibido" como píldora compacta */
 .received-btn {
   --border-radius: 999px;
   --padding-start: 12px;
@@ -285,7 +274,6 @@ p {
   font-size: 13px;
 }
 
-/* Overlay de loading sobre la modal */
 .detail-overlay {
   position: fixed;
   inset: 0;
